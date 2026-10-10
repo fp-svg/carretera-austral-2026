@@ -791,6 +791,8 @@ h3{font-size:18.5px;line-height:1.25;margin:0 0 6px;text-wrap:balance}
 .leaflet-popup-content{margin:14px 16px;font-size:15px;line-height:1.45}
 .leaflet-popup-content b{font-size:16px}
 .leaflet-popup-content .btn{margin-top:10px;min-height:44px;padding:8px 14px;font-size:14.5px}
+.leaflet-popup-content a.btn{color:var(--ink)}
+.ayuda-gm{font-size:13.5px;color:var(--muted);margin:8px 0 0;line-height:1.4}
 .leaflet-container a.leaflet-popup-close-button{color:var(--muted);width:36px;height:36px;font:24px/36px system-ui,sans-serif}
 .leaflet-control-attribution{background:var(--attr-bg,rgba(255,255,255,.85))!important;color:var(--muted)!important;font-size:10px}
 .leaflet-control-attribution a{color:var(--ink)!important;font-weight:400}
@@ -1061,6 +1063,11 @@ const PROPS=[
  {d:'Día 5',t:'Capillas de Mármol con plan B',p:'Si a la tarde del 11 suspenden las lanchas por viento, ir a la mañana del 12 antes de salir (hay salidas a las 9:00 y 11:30).',m:'El lago suele picarse a la tarde, y el día 6 es corto.'}
 ];
 const NOM_MES=' de noviembre';
+/* Recorridos para abrir en Google Maps (coordenadas sacadas del mapa de la guía; km verificados el 9/10/2026). */
+const GM={"d1": "https://www.google.com/maps/dir/?api=1&origin=-38.9516,-68.059&destination=-39.2727,-71.978&waypoints=-38.8999,-70.0654%7C-39.583,-71.469&travelmode=driving", "d2": "https://www.google.com/maps/dir/?api=1&origin=-39.2727,-71.978&destination=-41.1258,-73.0602&travelmode=driving", "d3": "https://www.google.com/maps/dir/?api=1&origin=-41.1258,-73.0602&destination=-42.9161,-72.7083&waypoints=-41.6901,-72.6425%7C-41.9661,-72.4707%7C-42.5597,-72.6041&travelmode=driving", "d4": "https://www.google.com/maps/dir/?api=1&origin=-42.9161,-72.7083&destination=-45.5718,-72.0688&waypoints=-43.9716,-72.4011%7C-44.325,-72.5589&travelmode=driving", "d5": "https://www.google.com/maps/dir/?api=1&origin=-45.5718,-72.0688&destination=-46.624,-72.6761&waypoints=-46.1235,-72.1635&travelmode=driving", "d6": "https://www.google.com/maps/dir/?api=1&origin=-46.624,-72.6761&destination=-47.2545,-72.5733&waypoints=-46.8491,-72.8009&travelmode=driving", "d7": "https://www.google.com/maps/dir/?api=1&origin=-47.2545,-72.5733&destination=-46.5502,-71.6268&waypoints=-47.1576,-71.8535%7C-46.9849,-71.8273&travelmode=driving", "c7a": "https://www.google.com/maps/dir/?api=1&origin=-47.2545,-72.5733&destination=-46.5502,-71.6268&waypoints=-47.1576,-71.8535%7C-47.4453,-70.9268%7C-46.5916,-70.9255&travelmode=driving", "c7b": "https://www.google.com/maps/dir/?api=1&origin=-47.2545,-72.5733&destination=-46.5502,-71.6268&waypoints=-46.844,-72.7049%7C-46.5378,-71.731&travelmode=driving", "d8": "https://www.google.com/maps/dir/?api=1&origin=-46.5502,-71.6268&destination=-44.0481,-70.5988&waypoints=-46.5835,-70.9265%7C-45.6918,-70.2538&travelmode=driving", "d9": "https://www.google.com/maps/dir/?api=1&origin=-44.0481,-70.5988&destination=-40.7621,-71.6472&waypoints=-42.9173,-71.3206%7C-41.8986,-71.5049%7C-41.1336,-71.3101&travelmode=driving", "d10": "https://www.google.com/maps/dir/?api=1&origin=-40.7621,-71.6472&destination=-40.1573,-71.3524&waypoints=-40.4519,-71.5736&travelmode=driving", "d11": "https://www.google.com/maps/dir/?api=1&origin=-40.1573,-71.3524&destination=-38.9516,-68.059&waypoints=-39.9493,-71.0754%7C-40.0482,-70.0765&travelmode=driving"};
+const ICO_GM='<svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M11 3h6v6M17 3l-8 8M15 12v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function btnGM(id,txt){return GM[id]?`<a class="btn" href="${GM[id]}" target="_blank" rel="noopener">${ICO_GM}${txt||'Abrir en Google Maps'}</a>`:''}
+const AYUDA_GM='Se abre en Google Maps; desde ahí lo podés guardar o navegar. Sin señal no carga: abrilo antes de salir.';
 
 /* ---------- Día a día ---------- */
 let actual=0;
@@ -1084,8 +1091,8 @@ function mostrar(i,dir){
  <div class="ojo">${lista(d.ojo)}</div>`;
  if(d.act)h+=`<div class="nota">${ICO_INFO}<div><b>Dato actualizado:</b> ${d.act}</div></div>`;
  if(d.cont)h+=`<div class="cont"><h3>Si la 41 sigue cerrada</h3><p class="muted" style="margin:0;font-size:14px">Dos alternativas para charlar en grupo; las dos llegan a Los Antiguos.</p>`+
-  Object.entries(CONT).map(([k,c])=>`<div class="alt"><b>${c.t}</b> <span class="muted">(${c.km})</span><p style="margin:4px 0 0;font-size:15px">${c.txt}</p><button class="btn" onclick="verMapa('${k}')">${ICO_MAPA}Ver en el mapa</button></div>`).join('')+'</div>';
- h+=`<div class="acciones"><button class="btn prim" onclick="verMapa('${d.seg[0]==='d3a'?'d3':d.seg[0]}')">${ICO_MAPA}Ver en el mapa</button>${d.balsas?'<button class="btn" onclick="irA(\'balsas\')">Horarios de las balsas</button>':''}</div></article>`;
+  Object.entries(CONT).map(([k,c])=>`<div class="alt"><b>${c.t}</b> <span class="muted">(${c.km})</span><p style="margin:4px 0 0;font-size:15px">${c.txt}</p><div class="acciones" style="margin-top:4px"><button class="btn" onclick="verMapa('${k}')">${ICO_MAPA}Ver en el mapa</button>${btnGM(k)}</div></div>`).join('')+'</div>';
+ h+=`<div class="acciones"><button class="btn prim" onclick="verMapa('${d.seg[0]==='d3a'?'d3':d.seg[0]}')">${ICO_MAPA}Ver en el mapa</button>${btnGM(d.seg[0]==='d3a'?'d3':d.seg[0])}${d.balsas?'<button class="btn" onclick="irA(\'balsas\')">Horarios de las balsas</button>':''}</div><p class="ayuda-gm">${AYUDA_GM}${d.balsas?' Google Maps arma el recorrido con las dos balsas incluidas; las horas que calcula no cuentan la espera en los muelles.':''}</p></article>`;
  cajaDia.innerHTML=h;
  document.getElementById('contador').textContent=(i+1)+' de '+DIAS.length;
  document.getElementById('prev').disabled=i===0;document.getElementById('next').disabled=i===DIAS.length-1;
@@ -1131,7 +1138,7 @@ function prepararMapa(){
    L.polyline(p.c,{className:g.gris?'alt':'dia'+(g.i+1),color:g.gris?'#6b7570':'#888',weight:g.gris?3.5:5,opacity:g.gris?.8:.95,dashArray:(g.gris||p.t==='r')?'8 8':null,lineCap:'round'}).addTo(fg);
   }));
   if(g.id==='d3')FERRY.forEach(f=>L.polyline(f,{className:'ferry',color:'#1c7ed6',weight:4,dashArray:'2 8',lineCap:'round'}).addTo(fg));
-  fg.on('click',e=>{L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<b>${g.t}</b><br>${g.k}<br><button class="btn prim" onclick="verFicha(${g.i})">Abrir la ficha del día ${g.i+1}</button>`).openOn(map)});
+  fg.on('click',e=>{L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<b>${g.t}</b><br>${g.k}<br><button class="btn prim" onclick="verFicha(${g.i})">Abrir la ficha del día ${g.i+1}</button> ${btnGM(g.id)}<p class="ayuda-gm">${AYUDA_GM}</p>`).openOn(map)});
   grupos[g.id]={fg,g};if(!g.gris)todoB.extend(fg.getBounds());
  });
  const COL={f:'#c92a2a',b:'#1971c2',c:'#f59f00',v:'#69c27a',o:'#b98cf5'};
