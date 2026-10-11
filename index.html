@@ -889,7 +889,10 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
  <div id="dia"></div>
  <div class="pasar"><button id="prev" aria-label="Día anterior">‹ Anterior</button><span id="contador"></span><button id="next" aria-label="Día siguiente">Siguiente ›</button></div>
  <p class="muted" style="font-size:13px;text-align:center;margin:4px 0 0">Deslizá la ficha hacia los costados para pasar de día.</p>
+ <div id="clima-portada"></div>
 </section>
+
+<section id="clima" class="panel" aria-label="Clima por lugar"></section>
 
 <section id="mapa" class="panel" aria-label="Recorrido">
  <h2>El recorrido</h2>
@@ -1073,6 +1076,294 @@ const ICO_GM='<svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"
 function btnGM(id,txt){return GM[id]?`<a class="btn" href="${GM[id]}" target="_blank" rel="noopener">${ICO_GM}${txt||'Abrir en Google Maps'}</a>`:''}
 const AYUDA_GM='Se abre en Google Maps; desde ahí lo podés guardar o navegar. Sin señal no carga: abrilo antes de salir.';
 
+/*CLIMA*/
+/* Clima del recorrido: motor común de las dos guías (moto y familia). 11/10/2026.
+   Sale del boceto aprobado (boceto_clima.html). Sólo pronóstico real de Open-Meteo, nada de climatología.
+   Cada guía llama climaIniciar({...}) con sus lugares y noches; lo pega su build (familia) o poner_clima_moto.py (moto). */
+(function(){
+const CSS=`
+.cl-bloque{margin:26px 0 6px}
+.cl-bloque h2{margin-bottom:4px}
+.cl-avisos{margin:0 0 10px}
+.cl-aviso{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;width:100%;min-height:48px;text-align:left;font:inherit;font-size:15.5px;font-weight:650;color:inherit;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--rust);border-radius:12px;padding:8px 12px;margin:0 0 6px;cursor:pointer}
+.cl-aviso .cl-pas{font-size:15.5px}
+.cl-pleg>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;list-style:none;cursor:pointer;background:var(--card);border:1px solid var(--borde-btn,var(--line));border-radius:24px;padding:8px 18px;font-weight:700;font-size:15.5px;color:var(--ink);margin:0 0 10px}
+.cl-pleg>summary::-webkit-details-marker{display:none}
+.cl-pleg>summary::after{content:'›';font-size:24px;line-height:1;transform:rotate(90deg);transition:transform .2s}
+.cl-pleg[open]>summary::after{transform:rotate(-90deg)}
+.cl-pleg .cl-modelos{display:none}
+.cl-act{font-size:14px;color:var(--muted);margin:0 0 10px}.cl-act.viejo{color:var(--rust);font-weight:700}
+.cl-sub{font-family:var(--display);font-size:23px;font-weight:700;margin:18px 0 8px}
+.cl-noche{display:grid;grid-template-columns:46px minmax(0,1fr);gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0 0 8px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.cl-noche .cl-fd{font-family:var(--display);font-weight:700;font-size:15px;line-height:1.1;color:var(--accent)}
+.cl-noche .cl-fd b{display:block;font-size:26px;color:var(--ink)}
+.cl-lug{font-weight:650;font-size:16px;line-height:1.3}.cl-lug small{font-weight:400;color:var(--muted);font-size:14px}
+.cl-lin{display:flex;flex-wrap:wrap;gap:4px 7px;align-items:center;margin-top:4px;font-size:15px;line-height:1.5}
+.cl-falta{font-size:14.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.cl-pas{display:inline-block;border-radius:999px;padding:0 8px;font-weight:650;font-size:14px;white-space:nowrap;line-height:1.55}
+.cl-big{gap:4px 6px}.cl-big .cl-pas{font-size:16px;padding:1px 8px}
+.cl-big .cl-dir{font-size:16px}
+.cl-min{font-family:var(--display);font-size:24px;font-weight:700;line-height:1.1}
+.cl-conf{font-size:13.5px;font-weight:700;border-radius:6px;padding:0 6px;border:1px solid;white-space:nowrap}
+.cl-c1{color:#0b6b5f;border-color:#a9d0c6;background:#e8f3ef}.cl-c2{color:#7a5a07;border-color:#f0d3a4;background:#fff3df}.cl-c3{color:#a4410e;border-color:#f0c2a4;background:#fdebe1}
+[data-tema=oscuro] .cl-c1{color:#8fe3cf;border-color:#2f6359;background:#16302b}[data-tema=oscuro] .cl-c2{color:#f3d18a;border-color:#6b5226;background:#2e2414}[data-tema=oscuro] .cl-c3{color:#ffb08a;border-color:#7a3a1c;background:#33201a}
+.cl-dir{display:inline-block;font-weight:700;white-space:nowrap}.cl-dir span{display:inline-block}
+.cl-tag{display:inline-block;font-size:13px;font-weight:800;border-radius:8px;padding:0 7px;background:var(--sel);color:var(--sage);margin-left:2px;vertical-align:1px;white-space:nowrap}
+.cl-modelos{font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.4}.cl-modelos b{color:var(--ink)}
+.cl-dia{border-top:1px dashed var(--line);margin:16px 0 0;padding-top:12px}
+.cl-dia h4{margin:0 0 4px;font-size:13px;color:var(--sage);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.cl-dia .cl-item{margin:0 0 10px}
+.cl-dia .btn{min-height:44px;padding:7px 14px;font-size:14.5px;margin-top:6px}
+.cl-volver{min-height:44px;border:1px solid var(--line);border-radius:22px;background:var(--card);padding:6px 16px;font-weight:650;color:var(--ink);margin:0 0 10px}
+.cl-chips{position:relative;display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none;margin:0 -2px}
+.cl-chips::-webkit-scrollbar{display:none}
+.cl-chips button{flex:0 0 auto;min-height:44px;border:1px solid var(--line);border-radius:22px;background:var(--card);padding:6px 14px;font-size:14.5px;font-weight:650;color:var(--ink)}
+.cl-chips button[aria-pressed=true]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.cl-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px}
+.cl-ahora{display:flex;gap:14px;align-items:center}
+.cl-ahora .cl-t{font-family:var(--display);font-size:44px;font-weight:700;line-height:1}
+.cl-tabla{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:6px}
+.cl-tabla .cl-pas{font-size:13.5px;padding:0 6px}
+.cl-tabla td{padding:7px 3px;border-top:1px solid var(--line);vertical-align:middle}
+.cl-tabla tr.cl-viaje td{background:var(--ojo-bg,#fff3df)}
+.cl-tabla td.cl-f{font-weight:650;white-space:nowrap}
+.cl-tabla td.cl-n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cl-nota{font-size:14.5px;line-height:1.45;background:var(--sel);border:1px solid var(--nota-borde,#a9d0c6);color:var(--nota-tx,#16332f);border-radius:12px;padding:9px 11px;margin:10px 0 0}
+.cl-nota.alta{background:var(--ojo-bg,#fff3df);border-color:var(--ojo-borde,#f0d3a4);color:var(--ojo-tx,#3a2a14)}
+.cl-card .btn{margin:8px 8px 0 0}
+.cl-wg{margin-top:12px;background:#fff;border-radius:12px;padding:6px;overflow-x:auto;color:#333}
+.cl-mapa{width:100%;height:340px;border:0;border-radius:12px;background:var(--mapa,#e9e7e2);display:block;margin-top:10px}
+.cl-est a{display:block;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;line-height:1.35}
+.cl-est a small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.cl-fuente{font-size:13.5px;color:var(--muted);margin:12px 0 4px;line-height:1.45}
+`;
+const DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
+const PUNTOS=['N','NE','E','SE','S','SO','O','NO'];
+/* Escala de viento pensada para navegar y para la moto (km/h). */
+const VIENTO=[[15,'#cfe8d4','#16332f'],[25,'#fff176','#1c2422'],[35,'#ffb74d','#1c2422'],[50,'#f76707','#1c2422'],[1e9,'#c92a2a','#fff']];
+const LLUVIA=[[1,'#eef3f1','#4d5955'],[5,'#bfe3f5','#1c2422'],[15,'#64b5f6','#1c2422'],[30,'#1565c0','#fff'],[1e9,'#6a1b9a','#fff']];
+const FRIO=[[-2,'#5f3dc4','#fff'],[2,'#91a7ff','#10201f'],[1e9,'#e7f5ff','#1c2422']];
+const MODELOS=[['ecmwf_ifs025','europeo'],['gfs_seamless','americano'],['icon_seamless','alemán']];
+const VARS=['weather_code','temperature_2m_max','temperature_2m_min','precipitation_sum','precipitation_probability_max','snowfall_sum','wind_speed_10m_max','wind_gusts_10m_max','wind_direction_10m_dominant'];
+const R=Math.round, coma=(x,d)=>x.toFixed(d).replace('.',',');
+const pas=(esc,x,t)=>{if(x==null)return'';const[,bg,fg]=esc.find(e=>x<e[0]);return`<span class="cl-pas" style="background:${bg};color:${fg}">${t}</span>`};
+const dir=g=>g==null?'':`<span class="cl-dir" title="viene del ${PUNTOS[R(g/45)%8]}"><span style="transform:rotate(${(g+180)%360}deg)">↑</span>${PUNTOS[R(g/45)%8]}</span>`;
+const hoyISO=()=>new Date().toLocaleDateString('sv');
+const dt=iso=>new Date(iso+'T12:00');
+const fe=iso=>{const d=dt(iso);return`${DIAS[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`};
+const entre=(a,b)=>R((dt(b)-dt(a))/864e5);
+const conf=n=>n<=3?'<span class="cl-conf cl-c1">confiable</span>':n<=7?'<span class="cl-conf cl-c2">bastante probable</span>':'<span class="cl-conf cl-c3">orientativo</span>';
+const WMO=c=>c==null?'':c<=1?'Despejado':c<=3?'Nublado':c<=48?'Niebla':c<=57?'Llovizna':c<=67?'Lluvia':c<=77?'Nieve':c<=82?'Chaparrones':c<=86?'Nieve':'Tormenta';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let C, G=null, sinSenal=false, elegido=null, volverY=0;
+const peorRafaga=(d,i)=>{let m=d.wind_gusts_10m_max[i];MODELOS.forEach(([k])=>{const v=d['g_'+k]&&d['g_'+k][i];if(v!=null&&(m==null||v>m))m=v});return m};
+
+/* UNA sola consulta para todos los lugares y los tres modelos (Open-Meteo acepta varias coordenadas separadas por coma). */
+async function bajar(){
+  const K=Object.keys(C.lugares);
+  const p=new URLSearchParams({latitude:K.map(k=>C.lugares[k].lat).join(','),longitude:K.map(k=>C.lugares[k].lon).join(','),
+    current:'temperature_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,weather_code',
+    daily:VARS.join(','),models:'best_match,'+MODELOS.map(m=>m[0]).join(','),forecast_days:16,timezone:'auto'});
+  const ac=new AbortController(), to=setTimeout(()=>ac.abort(),15000);
+  const r=await fetch('https://api.open-meteo.com/v1/forecast?'+p,{signal:ac.signal});clearTimeout(to);
+  if(!r.ok)throw new Error('Open-Meteo '+r.status);
+  const j=await r.json(), datos={};
+  (Array.isArray(j)?j:[j]).forEach((x,i)=>{
+    const s=x.daily, d={time:s.time};
+    VARS.forEach(v=>d[v]=s[v+'_best_match']||s[v]||[]);
+    MODELOS.forEach(([m])=>d['g_'+m]=s['wind_gusts_10m_max_'+m]||[]);
+    const c={};for(const k in x.current)c[k.replace(/_best_match$/,'')]=x.current[k];
+    datos[K[i]]={daily:d,current:c,elev:x.elevation};
+  });
+  const g={hora:new Date().toISOString(),datos};
+  try{localStorage.setItem(C.cache,JSON.stringify(g))}catch(e){}
+  return g;
+}
+
+function ahora(k){const c=G.datos[k]&&G.datos[k].current;if(!c||c.temperature_2m==null)return'<span class="muted">sin datos</span>';
+  return`<span class="muted" style="font-size:14px">Ahora:</span> <b>${R(c.temperature_2m)}°</b> ${dir(c.wind_direction_10m)} ${pas(VIENTO,c.wind_speed_10m,R(c.wind_speed_10m)+' km/h')} ${pas(VIENTO,c.wind_gusts_10m,'ráfaga '+R(c.wind_gusts_10m))}`}
+
+/* Lo que se ve de un lugar en una fecha: el pronóstico si ya entra; si no, el tiempo de ahora y cuándo aparece. */
+function resumen(f,k,noche){
+  const l=C.lugares[k], x=G.datos[k], falta=entre(hoyISO(),f);
+  if(!x)return'<div class="cl-falta">Sin datos de este lugar.</div>';
+  const d=x.daily, i=d.time.indexOf(f);
+  if(i>=0&&d.temperature_2m_max[i]!=null){
+    const rf=l.nav?peorRafaga(d,i):d.wind_gusts_10m_max[i], nieve=d.snowfall_sum[i];
+    const tiempo=`<div class="cl-lin">${falta<0?'':conf(falta)} ${WMO(d.weather_code[i])}${d.precipitation_probability_max[i]!=null?` <span class="muted" style="font-size:14px">· lluvia ${d.precipitation_probability_max[i]} %</span>`:''}</div>`;
+    const agua=pas(LLUVIA,d.precipitation_sum[i],coma(d.precipitation_sum[i]??0,1)+' mm')+(nieve>0?' '+pas([[1e9,'#e7f5ff','#1c2422']],nieve,'nieve '+coma(nieve,1)+' cm'):'');
+    const viento=`<div class="cl-lin${l.nav?' cl-big':''}">${dir(d.wind_direction_10m_dominant[i])} ${pas(VIENTO,d.wind_speed_10m_max[i],'viento '+R(d.wind_speed_10m_max[i])+' km/h')} ${pas(VIENTO,rf,'ráfaga '+R(rf))}</div>`;
+    let h;
+    if(l.alta)h=`<div class="cl-lin"><span class="cl-min">mín ${R(d.temperature_2m_min[i])}°</span> ${d.temperature_2m_min[i]<2?pas(FRIO,d.temperature_2m_min[i],d.temperature_2m_min[i]<=0?'helada':'cerca de 0°'):''} <span class="muted">máx ${R(d.temperature_2m_max[i])}°</span> ${agua}</div>`+viento+tiempo;
+    else if(l.nav)h=viento+`<div class="cl-lin"><b>${R(d.temperature_2m_max[i])}° / ${R(d.temperature_2m_min[i])}°</b> ${agua}</div>`+tiempo;
+    else h=tiempo+`<div class="cl-lin"><b>${R(d.temperature_2m_max[i])}° / ${R(d.temperature_2m_min[i])}°</b> ${agua}</div>`+viento;
+    if(l.nav){const ms=MODELOS.map(([m,n])=>{const v=d['g_'+m][i];return v==null?'':`${n} ${R(v)}`}).filter(Boolean);
+      if(ms.length)h+=`<div class="cl-modelos"><b>Ráfaga: la peor entre modelos</b> (${ms.join(' · ')}).</div>`;}
+    return h;
+  }
+  if(falta<0)return'<div class="cl-falta">Fecha pasada.</div>';
+  const ap=dt(f);ap.setDate(ap.getDate()-15);
+  return`<div class="cl-lin">${ahora(k)}</div><div class="cl-falta">Faltan ${falta} días. El pronóstico de ${noche?'esta noche':'ese día'} aparece hacia el ${ap.getDate()}/${ap.getMonth()+1}.</div>`;
+}
+
+function fila(f,k,extra,noche){
+  const l=C.lugares[k], d=dt(f);
+  return`<button class="cl-noche" data-k="${k}"><div class="cl-fd">${DIAS[d.getDay()]}<b>${d.getDate()}</b></div>
+   <div><div class="cl-lug">${esc(l.n)}${extra?` <small>· ${extra}</small>`:''}${l.nav?' <span class="cl-tag">navegación</span>':''}${l.alta?' <span class="cl-tag">paso alto</span>':''}</div>${resumen(f,k,noche)}</div></button>`;
+}
+
+function textoAct(){const t=new Date(G.hora);const hs=`${t.getDate()}/${t.getMonth()+1} a las ${t.toTimeString().slice(0,5)}`;
+  return sinSenal?`Sin señal: pronóstico guardado del ${hs}.`:`Actualizado el ${hs}. Se actualiza solo cada vez que se abre la guía.`}
+const FUENTE=`<p class="cl-fuente"><a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a> (CC BY 4.0). Modelo "best match" y, para la ráfaga en los lugares de navegación, europeo (ECMWF), americano (GFS) y alemán (ICON). Viento en detalle: Windguru y Windy.</p>`;
+
+/* Lo que hay que ver sin abrir nada: ráfaga fuerte donde se navega (o en cualquier lado si es roja) y helada en los pasos altos. */
+function avisos(){
+  const todos=[...C.noches,...C.extras];let hay=false;
+  const av=todos.map(n=>{const l=C.lugares[n.k],x=G.datos[n.k];if(!x)return'';const d=x.daily,i=d.time.indexOf(n.f);
+    if(i<0||d.temperature_2m_max[i]==null)return'';hay=true;
+    const rf=l.nav?peorRafaga(d,i):d.wind_gusts_10m_max[i],mn=d.temperature_2m_min[i],p=[];
+    if(l.alta&&mn<2)p.push(pas(FRIO,mn,'mín '+R(mn)+'°'));
+    if((l.nav&&rf>=35)||rf>=50)p.push(pas(VIENTO,rf,'ráfaga '+R(rf)));
+    return p.length?`<button class="cl-aviso" type="button" data-k="${n.k}">${fe(n.f)} · ${esc(l.c||l.n)} ${p.join(' ')}</button>`:''}).join('');
+  if(av)return av;
+  if(hay)return'<p class="cl-falta">Sin avisos de ráfaga fuerte ni de helada en los días que ya se pronostican.</p>';
+  const ap=dt(todos.map(n=>n.f).sort()[0]);ap.setDate(ap.getDate()-15);
+  return ap>dt(hoyISO())?`<p class="cl-falta">El pronóstico de la primera fecha aparece hacia el ${ap.getDate()}/${ap.getMonth()+1}.</p>`:'';
+}
+let abierto=false;
+function pintarPortada(){
+  const el=document.querySelector(C.portada);if(!el)return;
+  let h=`<div class="cl-bloque"><h2>Clima del recorrido</h2><p class="cl-act${sinSenal?' viejo':''}">${G?textoAct():'Consultando el pronóstico…'}</p>`;
+  if(G){
+    h+=`<div class="cl-avisos">${avisos()}</div>`;
+    h+=`<details class="cl-pleg"${abierto?' open':''}><summary>Ver las ${C.noches.length} noches${C.extras.length?` y los ${C.extras.length} puntos clave`:''}</summary>`;
+    h+=`<p class="cl-falta" style="margin:0 0 10px">Confiable hasta 3 días; bastante probable de 4 a 7; orientativo a más de 7. Tocá una fila para ver la ficha del lugar.</p>`;
+    h+=C.noches.map(n=>fila(n.f,n.k,n.x,true)).join('');
+    if(C.extras.length)h+=`<div class="cl-sub">${C.tituloExtras||'Puntos clave'}</div>`+C.extras.map(n=>fila(n.f,n.k,n.x,false)).join('');
+    h+='</details>'+FUENTE;
+  }
+  el.innerHTML=h+'</div>';
+  el.querySelectorAll('.cl-noche,.cl-aviso').forEach(b=>b.onclick=()=>climaAbrir(b.dataset.k));
+  const pl=el.querySelector('.cl-pleg');if(pl)pl.ontoggle=()=>{abierto=pl.open};
+}
+
+/* Bloque para la ficha de cada día: la noche y los puntos clave de esa fecha. */
+window.climaDia=function(orig){
+  const n=C.noches.filter(x=>x.o===orig), e=C.extras.filter(x=>x.o===orig);
+  if(!n.length&&!e.length)return'';
+  return`<div class="cl-dia" data-o="${orig}"><h4>Clima</h4><div class="cl-cuerpo">${G?cuerpoDia(orig):'<p class="cl-falta">Consultando el pronóstico…</p>'}</div></div>`;
+};
+function cuerpoDia(orig){
+  const it=[...C.noches.filter(x=>x.o===orig).map(x=>[x,true]),...C.extras.filter(x=>x.o===orig).map(x=>[x,false])];
+  return it.map(([x,noche])=>{const l=C.lugares[x.k];
+    return`<div class="cl-item"><div class="cl-lug">${noche?'Noche en ':''}${esc(l.n)}${x.x?` <small>· ${x.x}</small>`:''}</div>${resumen(x.f,x.k,noche)}
+     <button class="btn" onclick="climaAbrir('${x.k}')">Clima de ${esc(l.c||l.n)} ›</button></div>`}).join('')+
+    `<p class="cl-act${sinSenal?' viejo':''}">${textoAct()}</p>`;
+}
+function pintarDias(){document.querySelectorAll('.cl-dia').forEach(el=>el.querySelector('.cl-cuerpo').innerHTML=cuerpoDia(el.dataset.o))}
+
+function pintarFicha(){
+  const box=document.getElementById('cl-ficha');if(!box)return;
+  document.querySelectorAll('#cl-chips button').forEach(b=>{const on=b.dataset.k===elegido;b.setAttribute('aria-pressed',on);if(on){const c=b.parentNode;c.scrollLeft=b.offsetLeft-c.clientWidth/2+b.clientWidth/2}});
+  if(!G){box.innerHTML='<p class="cl-act">Consultando el pronóstico…</p>';return}
+  const k=elegido, l=C.lugares[k], x=G.datos[k];
+  if(!x){box.innerHTML='<p class="cl-falta">Sin datos de este lugar.</p>';return}
+  const d=x.daily, c=x.current, hoy=hoyISO();
+  const delViaje=new Set([...C.noches,...C.extras].filter(n=>n.k===k).map(n=>n.f));
+  const filas=d.time.map((f,i)=>{if(d.temperature_2m_max[i]==null)return'';const rf=l.nav?peorRafaga(d,i):d.wind_gusts_10m_max[i],nv=d.snowfall_sum[i];
+    return`<tr${delViaje.has(f)?' class="cl-viaje"':''}><td class="cl-f">${fe(f)}${entre(hoy,f)>7?'<br><span class="cl-conf cl-c3">orientativo</span>':''}</td>
+     <td class="cl-n">${l.alta?`<span class="muted">${R(d.temperature_2m_max[i])}°/</span>${d.temperature_2m_min[i]<2?pas(FRIO,d.temperature_2m_min[i],R(d.temperature_2m_min[i])+'°'):'<b>'+R(d.temperature_2m_min[i])+'°</b>'}`:`${R(d.temperature_2m_max[i])}°/${R(d.temperature_2m_min[i])}°`}</td>
+     <td class="cl-n">${pas(LLUVIA,d.precipitation_sum[i],coma(d.precipitation_sum[i]??0,0)+' mm')}${nv>0?`<br><small>nieve ${coma(nv,0)} cm</small>`:''}</td>
+     <td>${dir(d.wind_direction_10m_dominant[i])}</td>
+     <td class="cl-n">${R(d.wind_speed_10m_max[i])} ${pas(VIENTO,rf,R(rf))}</td></tr>`}).join('');
+  const wgs=l.wg?l.wg.map(([id,n])=>`<a class="btn prim" href="https://www.windguru.cz/${id}" target="_blank" rel="noopener">Viento en Windguru · ${esc(n)}</a>`).join('')
+    :`<a class="btn prim" href="https://www.windguru.cz/map/?lat=${l.lat}&lon=${l.lon}&zoom=9" target="_blank" rel="noopener">Viento en Windguru (mapa)</a>`;
+  const windy=`https://embed.windy.com/embed2.html?lat=${l.lat}&lon=${l.lon}&detailLat=${l.lat}&detailLon=${l.lon}&zoom=8&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C`;
+  box.innerHTML=`
+   <div class="cl-card"><div class="cl-ahora"><div class="cl-t">${c.temperature_2m==null?'–':R(c.temperature_2m)+'°'}</div>
+     <div><b>Ahora en ${esc(l.n)}</b><br>${WMO(c.weather_code)} · ${dir(c.wind_direction_10m)} ${pas(VIENTO,c.wind_speed_10m,R(c.wind_speed_10m)+' km/h')} ${pas(VIENTO,c.wind_gusts_10m,'ráfaga '+R(c.wind_gusts_10m))}</div></div>
+     ${l.nav?`<div class="cl-nota"><b>${l.nav}.</b> ${C.notaNav}</div>`:''}
+     ${l.alta?`<div class="cl-nota alta"><b>${l.alta}.</b> ${C.notaAlta}${x.elev?` El pronóstico es para unos ${R(x.elev).toLocaleString('es-AR')} m de altura.`:''}</div>`:''}
+     <p class="cl-act${sinSenal?' viejo':''}" style="margin:10px 0 0">${textoAct()}</p></div>
+   <div class="cl-card"><b>Próximos días</b> <span class="muted" style="font-size:14px">(viento máximo y, en color, ${l.nav?'la peor ráfaga entre tres modelos':'la ráfaga'}; km/h)</span>
+     <table class="cl-tabla">${filas}</table>
+     ${delViaje.size?`<p class="cl-falta">Resaltados, los días del viaje cuando ya entran en el pronóstico (hasta 16 días).</p>`:''}</div>
+   <div class="cl-card"><b>Viento en detalle</b><br>${wgs}
+     <a class="btn" href="https://www.windy.com/${l.lat}/${l.lon}?wind,${l.lat},${l.lon},9" target="_blank" rel="noopener">Abrir en Windy</a>
+     ${l.widget?`<div class="cl-wg" id="cl-wgw"></div>`:''}
+     <div><button class="btn" id="cl-cargar-mapa">Cargar mapa de viento (Windy)</button></div><div id="cl-mapa"></div></div>
+   <div class="cl-card cl-est"><b>Estaciones cercanas</b>${l.est&&l.est.length?l.est.map(([n,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(n)}<small>${new URL(u).hostname}</small></a>`).join(''):'<p class="cl-falta">No hay estaciones públicas cerca.</p>'}</div>
+   ${FUENTE}`;
+  document.getElementById('cl-cargar-mapa').onclick=e=>{e.currentTarget.remove();
+    document.getElementById('cl-mapa').innerHTML=`<iframe class="cl-mapa" loading="lazy" src="${windy}" title="Mapa de viento de Windy"></iframe>`};
+  if(l.widget)ponerWidget(l.widget);
+}
+/* Widget oficial de Windguru (el del botón "Agregar a tu sitio" de cada spot). */
+function ponerWidget(id){
+  const uid=`wg_fwdg_${id}_100_${Date.now()}`, s=document.createElement('script');s.id=uid;
+  document.getElementById('cl-wgw').appendChild(s);
+  const w=document.createElement('script');
+  w.src='https://www.windguru.cz/js/widget.php?'+[`s=${id}`,'m=100',`uid=${uid}`,'wj=kmh','tj=c','waj=m','tij=cm','odh=0','do=24','p=WINDSPD,GUST,SMER,TMPE,APCP1s','b=1','hc=#333','dc=gray','tc=#333','stl=','lng=es','wl=','session_id='].join('&');
+  document.body.appendChild(w);
+}
+window.climaAbrir=function(k){
+  if(!document.getElementById(C.panel).classList.contains('active'))volverY=window.scrollY;
+  elegido=k;C.irA(C.panel);pintarFicha();
+  const n=document.querySelector('nav');window.scrollTo({top:document.getElementById(C.panel).getBoundingClientRect().top+scrollY-(n?n.offsetHeight:0)-4});
+};
+
+window.climaIniciar=function(cfg){
+  C=cfg;
+  const st=document.createElement('style');st.textContent=CSS;document.head.appendChild(st);
+  /* ?desfase=N (prueba): corre el viaje para que la primera noche caiga dentro de N días. */
+  const des=new URLSearchParams(location.search).get('desfase'), base=C.noches[0][0];
+  const ef=o=>{if(des==null)return o;const d=dt(hoyISO());d.setDate(d.getDate()+Number(des)+entre(base,o));return d.toLocaleDateString('sv')};
+  C.noches=C.noches.map(([o,k,x])=>({o,f:ef(o),k,x}));C.extras=(C.extras||[]).map(([o,k,x])=>({o,f:ef(o),k,x}));
+  elegido=C.noches[0].k;
+  const p=document.getElementById(C.panel), orden=[...new Set([...C.noches,...C.extras].map(n=>n.k))];
+  p.innerHTML=`<button class="cl-volver" type="button">‹ Volver</button><h2>Clima por lugar</h2>
+   <div class="cl-chips" id="cl-chips">${orden.map(k=>`<button type="button" data-k="${k}">${esc(C.lugares[k].c||C.lugares[k].n)}</button>`).join('')}</div><div id="cl-ficha"></div>`;
+  p.querySelector('.cl-volver').onclick=()=>{C.irA(C.volverA||'dias');window.scrollTo({top:volverY})};
+  p.querySelectorAll('#cl-chips button').forEach(b=>b.onclick=()=>{elegido=b.dataset.k;pintarFicha()});
+  try{const g=localStorage.getItem(C.cache);if(g){G=JSON.parse(g);sinSenal=false}}catch(e){}
+  const todo=()=>{pintarPortada();pintarDias();pintarFicha()};
+  if(G){const t=new Date(G.hora);document.querySelector(C.portada)&&todo();
+    document.querySelectorAll('.cl-act').forEach(a=>a.textContent=`Consultando… (se ve lo guardado del ${t.getDate()}/${t.getMonth()+1} a las ${t.toTimeString().slice(0,5)})`);}
+  else pintarPortada();
+  bajar().then(g=>{G=g;sinSenal=false;todo()}).catch(e=>{console.warn('Clima:',e.message);
+    if(G){sinSenal=true;todo()}else{const a=document.querySelector(C.portada+' .cl-act');if(a){a.textContent='Sin señal y sin pronóstico guardado todavía.';a.className='cl-act viejo'}}});
+};
+})();
+
+const SMN=['Servicio Meteorológico Nacional (SMN): pronóstico y alertas','https://www.smn.gob.ar/'];
+const DMC=['Estaciones automáticas de Chile (DMC): elegir la más cercana','https://climatologia.meteochile.gob.cl/application/index/menuTematicoEmas'];
+const CLIMA_CFG={cache:'guia-austral-clima-v1',portada:'#clima-portada',panel:'clima',irA:id=>irA(id),tituloExtras:'Pasos, balsas y Chile Chico',
+ notaNav:'Si el viento o la ráfaga están en naranja o rojo, consultar a la operadora antes de salir: con viento, las lanchas y las balsas se suspenden o se atrasan.',
+ notaAlta:'En moto, mirar la mínima y la ráfaga: con helada o nieve, salir más tarde o esperar; con ráfaga naranja o roja, ir despacio y juntos. En lo más alto del paso, contar uno o dos grados menos que lo que marca.',
+ lugares:{
+  puc:{n:'Pucón',lat:-39.2731,lon:-71.9778,est:[DMC]},
+  mam:{n:'Paso Mamuil Malal',c:'Mamuil Malal',lat:-39.583,lon:-71.4693,alta:'Paso Mamuil Malal, unos 1.200 m (sáb 7)',est:[SMN]},
+  fru:{n:'Frutillar',lat:-41.1258,lon:-73.0605,wg:[[350162,'Puerto Varas']],widget:350162,est:[['El Tepual, aeropuerto de Puerto Montt (DMC)','https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/410005'],['Escuela Mirasol, Puerto Montt (DMC)','https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/410027']]},
+  lar:{n:'Balsa La Arena → Puelche',c:'La Arena',lat:-41.6901,lon:-72.6425,nav:'Balsa La Arena → Puelche (lun 9)',est:[]},
+  hor:{n:'Hornopirén, muelle',c:'Hornopirén',lat:-41.9661,lon:-72.4707,nav:'Balsa a Caleta Gonzalo (lun 9, 10:00)',est:[]},
+  cha:{n:'Chaitén',lat:-42.9165,lon:-72.7084,est:[['Nueva Chaitén (DMC)','https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/420015']]},
+  coy:{n:'Coyhaique',lat:-45.5712,lon:-72.0685,est:[['Teniente Vidal, aeródromo (DMC)','https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/450004'],['Mirador Marchant (DMC)','https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/450022'],['Cerro Divisadero (Weather Underground)','https://www.wunderground.com/dashboard/pws/ICOYHA3']]},
+  rt:{n:'Puerto Río Tranquilo',c:'Río Tranquilo',lat:-46.625,lon:-72.675,nav:'Lancha a las Capillas de Mármol (mié 11 a la tarde o jue 12 a la mañana)',est:[['Puerto Ibáñez, la más cercana, a unos 65 km (Weather Underground)','https://www.wunderground.com/dashboard/pws/IROIBE1'],['Bajada Ibáñez y Puerto Ibáñez (INIA; elegir en la lista)','https://agrometeorologia.cl/']]},
+  coc:{n:'Cochrane',lat:-47.2542,lon:-72.5732,est:[['Cochrane (INIA; elegir en la lista)','https://agrometeorologia.cl/']]},
+  rob:{n:'Paso Roballos y El Portezuelo',c:'Roballos',lat:-46.9865,lon:-71.8266,alta:'Ruta 41 por El Portezuelo, a unos 1.500 m (vie 13)',est:[SMN]},
+  cch:{n:'Chile Chico',lat:-46.5397,lon:-71.7246,nav:'Lago General Carrera en Chile Chico (alternativa B del vie 13; barcaza a Puerto Ibáñez)',est:[['Chile Chico (INIA; elegir en la lista)','https://agrometeorologia.cl/']]},
+  lan:{n:'Los Antiguos',lat:-46.5503,lon:-71.6268,est:[['Chile Chico, al otro lado del límite (INIA; elegir en la lista)','https://agrometeorologia.cl/'],SMN]},
+  gco:{n:'Gobernador Costa',lat:-44.0486,lon:-70.599,est:[SMN]},
+  vla:{n:'Villa La Angostura',lat:-40.7621,lon:-71.6472,wg:[[6099,'VLA Correntoso']],widget:6099,est:[['Villa La Angostura (Weather Underground)','https://www.wunderground.com/dashboard/pws/IVILLA1775']]},
+  sma:{n:'San Martín de los Andes',c:'San Martín',lat:-40.1569,lon:-71.3526,est:[SMN]}
+ },
+ noches:[['2026-11-07','puc'],['2026-11-08','fru','o Puerto Varas'],['2026-11-09','cha'],['2026-11-10','coy'],['2026-11-11','rt','lancha a las Capillas'],
+  ['2026-11-12','coc'],['2026-11-13','lan'],['2026-11-14','gco','o Tecka'],['2026-11-15','vla'],['2026-11-16','sma']],
+ extras:[['2026-11-07','mam','cruce de la cordillera'],['2026-11-09','lar','balsa sin reserva'],['2026-11-09','hor','balsa 10:00'],
+  ['2026-11-13','rob','ripio de altura'],['2026-11-13','cch','si va la alternativa B']]
+};
+/*/CLIMA*/
 /* ---------- Día a día ---------- */
 let actual=0;
 const tira=document.getElementById('tira'),cajaDia=document.getElementById('dia');
@@ -1096,6 +1387,7 @@ function mostrar(i,dir){
  if(d.act)h+=`<div class="nota">${ICO_INFO}<div><b>Dato actualizado:</b> ${d.act}</div></div>`;
  if(d.cont)h+=`<div class="cont"><h3>Si la 41 sigue cerrada</h3><p class="muted" style="margin:0;font-size:14px">Dos alternativas para charlar en grupo; las dos llegan a Los Antiguos.</p>`+
   Object.entries(CONT).map(([k,c])=>`<div class="alt"><b>${c.t}</b> <span class="muted">(${c.km})</span><p style="margin:4px 0 0;font-size:15px">${c.txt}</p><div class="acciones" style="margin-top:4px"><button class="btn" onclick="verMapa('${k}')">${ICO_MAPA}Ver en el mapa</button>${btnGM(k)}</div></div>`).join('')+'</div>';
+ h+=climaDia('2026-11-'+String(7+i).padStart(2,'0'));
  h+=`<div class="acciones"><button class="btn prim" onclick="verMapa('${d.seg[0]==='d3a'?'d3':d.seg[0]}')">${ICO_MAPA}Ver en el mapa</button>${btnGM(d.seg[0]==='d3a'?'d3':d.seg[0])}${d.balsas?'<button class="btn" onclick="irA(\'balsas\')">Horarios de las balsas</button>':''}</div><p class="ayuda-gm">${AYUDA_GM}${d.balsas?' Google Maps arma el recorrido con las dos balsas incluidas; las horas que calcula no cuentan la espera en los muelles.':''}</p></article>`;
  cajaDia.innerHTML=h;
  document.getElementById('contador').textContent=(i+1)+' de '+DIAS.length;
@@ -1200,6 +1492,7 @@ avance();
 /* ---------- Para charlar ---------- */
 document.getElementById('props').innerHTML=PROPS.map(p=>`<article class="prop"><div class="cab"><span class="tag">Propuesta</span><span class="dia">${p.d}, opcional</span></div><h3>${p.t}</h3><p>${p.p}</p><p class="porque"><b>Por qué:</b> ${p.m}</p>${p.map?`<button class="btn" onclick="verMapa('${p.map}')">${ICO_MAPA}Ver en el mapa</button>`:''}</article>`).join('');
 
+climaIniciar(CLIMA_CFG);
 mostrar(0,0);
 /* ---------- Modo oscuro ---------- */
 const temaB=document.getElementById('tema');
