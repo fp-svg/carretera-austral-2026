@@ -847,7 +847,11 @@ h3{font-size:18.5px;line-height:1.25;margin:0 0 6px;text-wrap:balance}
 /* Modo oscuro (lo elige el usuario con el botón de la luna) */
 [data-tema=oscuro]{color-scheme:dark;--bg:#101c1b;--bg2:#0f1a19;--card:#172726;--card2:#1c2e2c;--line:#2f4643;--muted:#a9bdb6;--accent:#7fd1c1;--rust:#f2a36b;--sage:#86cbb9;--ink:#eef0ea;--on-accent:#0b1a18;--on-c:#10201f;--sel:#1f3d38;--track:#2a3d3a;--track2:#5d736e;--borde-btn:#4a605b;--borde-dash:#6d7f7a;--ring:#101c1b;--mapa:#262a2a;--ferry:#5fb3ff;--alt:#a3aeaa;--noche-bg:#f6f3ec;--noche-fg:#10201f;--nav-bg:rgba(16,28,27,.95);--ojo-bg:#2e2414;--ojo-borde:#6b5226;--ojo-tx:#f3e3c6;--nota-tx:#d3ebe4;--nota-borde:#2f6359;--attr-bg:rgba(16,28,27,.85);--d1:#ff6b6b;--d2:#ffa94d;--d3:#e0a96d;--d4:#4dabf7;--d5:#b197fc;--d6:#f783ac;--d7:#d8e04a;--d8:#3bc9db;--d9:#69db7c;--d10:#e599f7;--d11:#20c997}
 [data-tema=oscuro] .ficha{box-shadow:0 8px 24px -12px rgba(0,0,0,.6)}
-[data-tema=oscuro] .leaflet-container img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.95)}
+[data-tema=oscuro] #map{--ring:#fff;--ferry:#1c7ed6;--alt:#6b7570;--noche-bg:#1c2422;--noche-fg:#fff;--d1:#c92a2a;--d2:#c2410c;--d3:#a15c07;--d4:#1971c2;--d5:#7048e8;--d6:#c2255c;--d7:#5c7f0a;--d8:#0b7285;--d9:#2b7a3b;--d10:#9c36b5;--d11:#087f5b;--mapa:#e9e7e2}
+#map .leaflet-control-layers-toggle{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24' fill='none' stroke='%23123c3a' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3C/svg%3E") 50% 50% no-repeat}
+.leaflet-control-layers{color:#1c2422;border-radius:10px;color-scheme:light}.leaflet-control-layers-expanded{padding:6px 12px 6px 8px}
+.leaflet-control-layers label{font-size:16px;line-height:1;margin:0}.leaflet-control-layers label span{display:flex;align-items:center;gap:8px;min-height:40px}
+.leaflet-control-layers-selector{width:20px;height:20px;margin:0;top:0}
 .cordillera path:last-child{fill:var(--bg)}
 .leaflet-overlay-pane path.dia1{stroke:var(--d1)}.leaflet-overlay-pane path.dia2{stroke:var(--d2)}.leaflet-overlay-pane path.dia3{stroke:var(--d3)}.leaflet-overlay-pane path.dia4{stroke:var(--d4)}.leaflet-overlay-pane path.dia5{stroke:var(--d5)}.leaflet-overlay-pane path.dia6{stroke:var(--d6)}.leaflet-overlay-pane path.dia7{stroke:var(--d7)}.leaflet-overlay-pane path.dia8{stroke:var(--d8)}.leaflet-overlay-pane path.dia9{stroke:var(--d9)}.leaflet-overlay-pane path.dia10{stroke:var(--d10)}.leaflet-overlay-pane path.dia11{stroke:var(--d11)}.leaflet-overlay-pane path.ferry{stroke:var(--ferry)}.leaflet-overlay-pane path.alt{stroke:var(--alt)}
 footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(34px + env(safe-area-inset-bottom));border-top:1px solid var(--line);margin-top:20px}
@@ -1127,14 +1131,23 @@ const FERRY=[[[-41.6901,-72.6425],[-41.7422,-72.6499]],[[-41.9661,-72.4707],[-42
 let map=null;const grupos={};let todoB;
 function prepararMapa(){
  if(map){requestAnimationFrame(()=>map.invalidateSize());return}
- map=L.map('map',{zoomControl:true,attributionControl:true,maxZoom:16});
- const ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
- L.tileLayer(ESRI+'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,attribution:'Teselas &copy; Esri, HERE, Garmin, &copy; OpenStreetMap'}).addTo(map);
- L.tileLayer(ESRI+'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,pane:'shadowPane'}).addTo(map);
+ map=L.map('map',{zoomControl:true,attributionControl:true,maxZoom:18});
+ // Fondos sin clave: OSM (parecido a Google Maps), satélite Esri con nombres y relieve Esri Topo. Recuerda la elección.
+ const ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/';
+ const FONDOS={
+  'Mapa':L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}),
+  'Satélite':L.layerGroup([L.tileLayer(ESRI+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Imágenes &copy; Esri, Maxar, Earthstar Geographics'}),L.tileLayer(ESRI+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,pane:'shadowPane'})]),
+  'Relieve':L.tileLayer(ESRI+'World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Teselas &copy; Esri, HERE, Garmin, USGS, &copy; OpenStreetMap'})
+ };
+ let fondo='Mapa';try{const f=localStorage.getItem('guia-austral-fondo');if(FONDOS[f])fondo=f}catch(e){}
+ FONDOS[fondo].addTo(map);
+ const tg=L.control.layers(FONDOS,null,{position:'topright'}).addTo(map).getContainer().querySelector('a');tg.title=tg.ariaLabel='Fondo del mapa';
+ map.on('baselayerchange',e=>{try{localStorage.setItem('guia-austral-fondo',e.name)}catch(x){}});
  todoB=L.latLngBounds([]);
  GRUPOS_DEF.forEach(g=>{
   const fg=L.featureGroup().addTo(map);
   g.segs.forEach(k=>(G[k]?G[k].p:[]).forEach(p=>{
+   L.polyline(p.c,{className:'casco',color:'#fff',weight:g.gris?6.5:8.5,opacity:.9,lineCap:'round',interactive:false}).addTo(fg);
    L.polyline(p.c,{className:g.gris?'alt':'dia'+(g.i+1),color:g.gris?'#6b7570':'#888',weight:g.gris?3.5:5,opacity:g.gris?.8:.95,dashArray:(g.gris||p.t==='r')?'8 8':null,lineCap:'round'}).addTo(fg);
   }));
   if(g.id==='d3')FERRY.forEach(f=>L.polyline(f,{className:'ferry',color:'#1c7ed6',weight:4,dashArray:'2 8',lineCap:'round'}).addTo(fg));
@@ -1165,7 +1178,7 @@ function estilo(id){
  document.querySelectorAll('#tramos button').forEach(b=>b.classList.toggle('sel',b.dataset.id===id));
  document.getElementById('todo').classList.toggle('on',!id);
 }
-function enfocar(id){map.invalidateSize();map.closePopup();map.fitBounds(grupos[id].fg.getBounds(),{padding:[28,28]});estilo(id)}
+function enfocar(id){map.invalidateSize();map.closePopup();map.fitBounds(grupos[id].fg.getBounds(),{padding:[28,28],maxZoom:11});estilo(id)}
 function verMapa(id){irA('mapa');const w=document.getElementById('mapa-wrap');window.scrollTo({top:w.getBoundingClientRect().top+scrollY-document.querySelector('nav').offsetHeight-10});requestAnimationFrame(()=>{enfocar(id)})}
 document.getElementById('todo').onclick=()=>{map.closePopup();map.fitBounds(todoB,{padding:[12,12]});estilo(null)};
 document.getElementById('verRefs').onclick=function(){this.classList.toggle('on');document.getElementById('refs').classList.toggle('on')};
