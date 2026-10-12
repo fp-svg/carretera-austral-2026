@@ -2129,9 +2129,14 @@ async function pedir(cuerpo){
   const j=await r.json();if(!j.ok)throw new Error(j.error||'error');return j;
  }finally{clearTimeout(t)}
 }
+/* Defensa extra: sólo se aceptan gastos con datos válidos (el servidor ya valida al guardar). */
+const okGasto=g=>g&&/^[A-Za-z0-9-]{8,64}$/.test(String(g.id))&&PERS.includes(g.pago)&&PERS.includes(g.cargo)&&(g.mon in MON)
+ &&Number.isFinite(+g.monto)&&+g.monto>0&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.fecha))&&g.div&&typeof g.div==='object'
+ &&Object.keys(g.div).length>0&&Object.entries(g.div).every(([k,v])=>PERS.includes(k)&&Number.isFinite(+v)&&+v>0);
 function recibir(j,mandados){
- const m={};j.gastos.forEach(g=>m[g.id]=g);
- datos={gastos:m,cambio:j.cambio,ts:Date.now()};pone('datos',datos);
+ const m={};(j.gastos||[]).filter(okGasto).forEach(g=>{g.monto=+g.monto;m[g.id]=g});
+ const cb=j.cambio||{},num=v=>Number.isFinite(+v)&&+v>0?+v:0;
+ datos={gastos:m,cambio:Object.assign({},cb,{ars:num(cb.ars),clp:num(cb.clp)}),ts:Date.now()};pone('datos',datos);
  (mandados||[]).forEach(g=>{if(cola[g.id]&&cola[g.id].mod===g.mod)delete cola[g.id]}); // si se editó mientras subía, queda para la próxima
  for(const id in cola)if(m[id]&&m[id].mod>=cola[id].mod)delete cola[id];
  pone('cola',cola);
@@ -2183,7 +2188,7 @@ ${gs.length?`<div class="g-resumen">
  // Quién le paga a quién
  if(gs.length){h+=`<section class="tarjeta g-liq"><h3>¿Quién le paga a quién?</h3>`;
  if(!pagos.length)h+=`<p class="g-cero">🎉 Están todos a mano.</p>`;
- else h+=`<ul class="g-pagos">${pagos.map(p=>`<li class="${p.de===yo||p.a===yo?'mio':''}"><span class="g-par"><b>${p.de}</b> <span class="g-fl"><span class="g-vh">le paga a</span>→</span> <b>${p.a}</b></span><b class="g-monto">${enRef(p.monto)}</b></li>`).join('')}</ul><p class="muted g-chico">${pagos.length===1?'Con una sola transferencia':`Con ${pagos.length} transferencias`} quedan todos a mano.</p>`;
+ else h+=`<ul class="g-pagos">${pagos.map(p=>`<li class="${p.de===yo||p.a===yo?'mio':''}"><span class="g-par"><b>${esc(p.de)}</b> <span class="g-fl"><span class="g-vh">le paga a</span>→</span> <b>${esc(p.a)}</b></span><b class="g-monto">${enRef(p.monto)}</b></li>`).join('')}</ul><p class="muted g-chico">${pagos.length===1?'Con una sola transferencia':`Con ${pagos.length} transferencias`} quedan todos a mano.</p>`;
  h+=`<button type="button" class="btn prim g-wa" data-acc="wa">Compartir por WhatsApp</button></section>`}
  // Saldos
  if(gs.length)h+=`<section class="tarjeta"><h3>Saldos</h3><ul class="g-saldos">${PERS.map(n=>{const s=k.saldo[n]||0;return `<li><div><b>${n}</b><small>pagó ${enRef(k.pago[n]||0)} · le toca ${enRef(k.toca[n]||0)}</small></div><span class="${s>0?'favor':s<0?'contra':''}">${s?(s>0?'+':'')+enRef(s):'0'}<small>${s>0?'a favor':s<0?'en contra':'al día'}</small></span></li>`}).join('')}</ul></section>`;
@@ -2191,7 +2196,7 @@ ${gs.length?`<div class="g-resumen">
  h+=`<section>`+(gs.length?`<h3 class="g-tit">Lo anotado</h3>`:'');
  if(!gs.length)h+=`<div class="tarjeta g-vacio"><span aria-hidden="true">🧾</span><p>Todavía no hay gastos.</p></div>`;
  else{const dias=[];gs.forEach(g=>{const d=dias[dias.length-1];if(d&&d[0]===g.fecha)d[1].push(g);else dias.push([g.fecha,[g]])});
-  h+=dias.map(([dia,lista])=>`<h4 class="g-dia">${diaCorto(dia)}</h4><ul class="g-lista">${lista.map(g=>{const c=CATS[g.cat]||CATS.otros,v=aRef(g.monto,g.mon,ref,cb);return `<li><button type="button" data-ed="${g.id}"><span class="g-emo" aria-hidden="true">${c[0]}</span><span class="g-que"><b>${esc(g.desc||c[1])}</b><small>Pagó <b>${esc(g.pago)}</b> · ${quienes(g.div)}${g.cargo!==g.pago?' · anotó '+esc(g.cargo):''}${cola[g.id]?' · ⏳ sin subir':''}</small></span><span class="g-cuanto"><b>${plata(g.monto,g.mon)}</b>${g.mon!==ref&&v!==null?`<small>≈ ${plata(v,ref)}</small>`:''}</span></button></li>`}).join('')}</ul>`).join('')}
+  h+=dias.map(([dia,lista])=>`<h4 class="g-dia">${diaCorto(dia)}</h4><ul class="g-lista">${lista.map(g=>{const c=CATS[g.cat]||CATS.otros,v=aRef(g.monto,g.mon,ref,cb);return `<li><button type="button" data-ed="${esc(g.id)}"><span class="g-emo" aria-hidden="true">${c[0]}</span><span class="g-que"><b>${esc(g.desc||c[1])}</b><small>Pagó <b>${esc(g.pago)}</b> · ${quienes(g.div)}${g.cargo!==g.pago?' · anotó '+esc(g.cargo):''}${cola[g.id]?' · ⏳ sin subir':''}</small></span><span class="g-cuanto"><b>${plata(g.monto,g.mon)}</b>${g.mon!==ref&&v!==null?`<small>≈ ${plata(v,ref)}</small>`:''}</span></button></li>`}).join('')}</ul>`).join('')}
  h+=`</section>`;
  // Totales
  if(gs.length){
@@ -2214,7 +2219,7 @@ function abrir(g){
  dlg.innerHTML=`<form method="dialog" novalidate>
  <div class="g-dcab"><h3 tabindex="-1" autofocus>${f.nuevo?'Nuevo gasto':'Editar gasto'}</h3><button type="button" class="g-x" data-acc="cerrar" aria-label="Cerrar">✕</button></div>
  <label class="g-lab" for="g-monto">¿Cuánto?</label>
- <div class="g-montofila"><input id="g-monto" inputmode="decimal" autocomplete="off" placeholder="0" value="${f.monto?String(f.monto).replace('.',','):''}">
+ <div class="g-montofila"><input id="g-monto" inputmode="decimal" autocomplete="off" placeholder="0" value="${f.monto?esc(String(f.monto).replace('.',',')):''}">
  <div class="g-seg" role="group" aria-label="Moneda">${Object.keys(MON).map(m=>`<button type="button" data-mon="${m}" aria-pressed="${f.mon===m}">${m}</button>`).join('')}</div></div>
  <p class="g-lab">¿En qué?</p>
  <div class="g-chips g-cats" role="group" aria-label="Categoría">${Object.entries(CATS).map(([c,[e,t]])=>`<button type="button" data-cat="${c}" aria-pressed="${f.cat===c}"><span aria-hidden="true">${e}</span> ${t}</button>`).join('')}</div>
@@ -2225,7 +2230,7 @@ function abrir(g){
  <div class="g-fila2"><div><label class="g-lab" for="g-desc">Detalle</label>
  <input id="g-desc" maxlength="120" autocomplete="off" placeholder="Ej.: nafta en Chaitén" value="${esc(f.desc)}"></div>
  <div><label class="g-lab" for="g-fecha">Fecha</label>
- <input id="g-fecha" type="date" value="${f.fecha}"></div></div>
+ <input id="g-fecha" type="date" value="${esc(f.fecha)}"></div></div>
  <p class="g-error" role="alert"></p>
  <div class="g-dpie">${f.nuevo?'':'<button type="button" class="btn g-borrar" data-acc="borrar">Borrar</button>'}<button type="submit" class="btn prim g-ok">${f.nuevo?'Guardar gasto':'Guardar cambios'}</button></div>
  </form>`;
@@ -2239,7 +2244,7 @@ function pintarEntre(){
  <label class="g-check"><input type="checkbox" id="g-dist" ${f.distintas?'checked':''}> Partes distintas (cada uno un monto)</label>`;
  if(f.distintas){
   const ns=PERS.filter(n=>n in f.div);
-  h+=`<div class="g-partes">${ns.map(n=>`<label><span>${n}</span><input inputmode="decimal" data-parte="${n}" value="${f.div[n]?String(f.div[n]).replace('.',','):''}" placeholder="0"></label>`).join('')}
+  h+=`<div class="g-partes">${ns.map(n=>`<label><span>${n}</span><input inputmode="decimal" data-parte="${n}" value="${f.div[n]?esc(String(f.div[n]).replace('.',',')):''}" placeholder="0"></label>`).join('')}
   <p class="g-falta"></p></div>`;
  }else if(total>0&&Object.keys(f.div).length)h+=`<p class="muted g-chico">${plata(total/Object.keys(f.div).length,f.mon)} cada uno</p>`;
  c.innerHTML=h;falta();
@@ -2306,9 +2311,9 @@ function abrirCambio(){
  const cb=cambio();
  dlgC.innerHTML=`<form method="dialog" novalidate><div class="g-dcab"><h3 tabindex="-1" autofocus>⚙️ Tipo de cambio</h3><button type="button" class="g-x" data-acc="cerrar" aria-label="Cerrar">✕</button></div>
  <p class="muted g-chico">Uno solo para todo el grupo: con esto se pasan los gastos a dólares o a pesos. Cada gasto queda en la moneda en que se pagó.${cb.por?` Último cambio: ${esc(cb.por)}, ${esc(cb.fecha)}.`:''}</p>
- <label class="g-lab" for="g-ars">Pesos argentinos por 1 dólar</label><input id="g-ars" inputmode="decimal" value="${cb.ars?String(cb.ars).replace('.',','):''}" placeholder="Ej.: 1.540">
+ <label class="g-lab" for="g-ars">Pesos argentinos por 1 dólar</label><input id="g-ars" inputmode="decimal" value="${cb.ars?esc(String(cb.ars).replace('.',',')):''}" placeholder="Ej.: 1.540">
  <div class="g-chips g-sug" data-para="g-ars"></div>
- <label class="g-lab" for="g-clp">Pesos chilenos por 1 dólar</label><input id="g-clp" inputmode="decimal" value="${cb.clp?String(cb.clp).replace('.',','):''}" placeholder="Ej.: 950">
+ <label class="g-lab" for="g-clp">Pesos chilenos por 1 dólar</label><input id="g-clp" inputmode="decimal" value="${cb.clp?esc(String(cb.clp).replace('.',',')):''}" placeholder="Ej.: 950">
  <div class="g-chips g-sug" data-para="g-clp"></div>
  <p class="g-error" role="alert"></p>
  <div class="g-dpie"><button type="submit" class="btn prim g-ok">Guardar para todos</button></div></form>`;
