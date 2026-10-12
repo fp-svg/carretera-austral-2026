@@ -858,6 +858,125 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
 @media (min-width:600px){.pestanas button{font-size:16px}.ficha{padding:24px}}
 </style>
 <style id="pestanas-clima">.pestanas{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.pestanas button{min-height:44px;padding:4px 0;font-size:14px;letter-spacing:-.01em}@media (min-width:600px){.pestanas{grid-template-columns:repeat(6,1fr)}}</style>
+<style id="gastos-css">
+/* Siete pestañas: 4 arriba y 3 abajo en el teléfono (como la guía de la familia); una fila en pantalla grande */
+/* Igual que la guía de la familia: la luna/sol queda arriba a la derecha, al lado de la primera fila; la segunda fila llena el ancho */
+@media (max-width:599px){nav .wrap{position:relative}#tema{position:absolute;right:18px;top:0}.pestanas{display:flex;flex-wrap:wrap;gap:4px}.pestanas button{flex:0 0 calc((100% - 60px)/4);min-width:0;min-height:44px;padding:4px 0;font-size:14.5px;letter-spacing:-.01em}.pestanas button:nth-child(n+5){flex-basis:calc((100% - 8px)/3)}}
+@media (min-width:600px){.pestanas{grid-template-columns:repeat(7,1fr)}.pestanas button{font-size:15px}}
+
+/* Gastos */
+#gastos,.g-dlg{--favor:#1d6b38;--contra:#b42318;--favor-bg:#e5f3e9;--contra-bg:#fdeceb;--favor-borde:#9fcfae;--contra-borde:#f1aaa3}
+[data-tema=oscuro] #gastos,[data-tema=oscuro] .g-dlg{--favor:#7bd59a;--contra:#ff9a8f;--favor-bg:#143322;--contra-bg:#3a1c1a;--favor-borde:#2c6b45;--contra-borde:#7a3a33}
+.g-cab{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.g-cab h2{margin:0}
+.g-link{min-height:44px;border:0;background:none;color:var(--muted);font-size:15px;padding:0 4px;text-decoration:underline;text-underline-offset:3px}
+.g-link b{color:var(--ink)}
+.g-estado{margin:2px 0 12px;font-size:14.5px;font-weight:650;color:var(--muted)}
+.g-estado.ok{color:var(--favor)}.g-estado.pend{color:var(--rust)}
+/* Fijo abajo de la pantalla (sólo se ve con la pestaña Gastos abierta): siempre a mano del pulgar.
+   El panel deja abajo un espacio del alto del botón + margen, para que al bajar nada quede tapado. */
+#gastos{padding-bottom:calc(62px + 36px + env(safe-area-inset-bottom))}
+.g-agregar{position:fixed;left:18px;right:18px;max-width:560px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:5;display:flex;align-items:center;justify-content:center;gap:10px;min-height:62px;border:0;border-radius:20px;background:var(--accent);color:var(--on-accent);font-size:21px;font-weight:750;box-shadow:0 10px 24px -8px rgba(0,0,0,.45),0 0 0 4px var(--bg);margin:0 auto}
+.g-agregar span{font-size:32px;line-height:1;font-weight:500}
+.g-resumen{display:grid;grid-template-columns:1.25fr 1fr;gap:10px;margin:0 0 12px}
+.g-resumen div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px;min-width:0}
+.g-resumen span{display:block;font-size:14px;color:var(--muted);font-weight:700}
+.g-resumen b{display:block;font-family:var(--display);font-size:26px;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-resumen small{color:var(--muted);font-size:14px;font-weight:600}
+.g-resumen .g-yo b{font-size:34px}
+.g-resumen .favor{background:var(--favor-bg);border:1.5px solid var(--favor-borde)}.g-resumen .contra{background:var(--contra-bg);border:1.5px solid var(--contra-borde)}
+.g-resumen .favor b,.g-resumen .favor small{color:var(--favor)}.g-resumen .contra b,.g-resumen .contra small{color:var(--contra)}
+.g-ref{display:flex;align-items:center;gap:6px;margin:0 0 14px;font-size:15px;color:var(--muted)}
+.g-ref span{margin-right:4px}
+.g-ref button,.g-seg button{min-height:44px;min-width:44px;border:1px solid var(--borde-btn);background:var(--card);border-radius:22px;padding:6px 14px;font-weight:650;color:var(--ink)}
+.g-ref button[aria-pressed=true],.g-seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.g-liq h3,.g-tit{margin-bottom:8px}
+.g-pagos{list-style:none;margin:0;padding:0}
+.g-pagos li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:17px;line-height:1.3}
+.g-par b{white-space:nowrap}
+.g-fl{color:var(--muted);font-weight:700;margin:0 4px}
+.g-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.g-pagos li:last-child{border-bottom:0}
+.g-pagos li.mio{background:var(--sel);margin:0 -10px;padding:12px 10px;border-radius:12px}
+.g-monto{font-family:var(--display);font-size:25px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.g-cero{font-size:19px;font-weight:650;margin:4px 0}
+.g-chico{font-size:14px;margin:6px 0 0}
+.g-wa{margin-top:12px;width:100%;justify-content:center;min-height:52px;font-size:17px}
+.g-saldos{list-style:none;margin:0;padding:0}
+.g-saldos li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.g-saldos li:last-child{border-bottom:0}
+.g-saldos b{font-size:17px}
+.g-saldos small{display:block;color:var(--muted);font-size:13.5px;line-height:1.3}
+.g-saldos li>span{text-align:right;font-family:var(--display);font-size:22px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.1}
+.g-saldos li>span small{font-family:system-ui,-apple-system,sans-serif;font-weight:600;font-size:12.5px}
+.g-saldos .favor{color:var(--favor)}.g-saldos .contra{color:var(--contra)}
+.g-dia{margin:14px 0 6px;font-size:13.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sage)}
+.g-tit+.g-dia{margin-top:4px}
+.g-vacio{display:flex;align-items:center;gap:14px;margin:4px 0 0}.g-vacio span{font-size:34px}.g-vacio p{margin:0;color:var(--muted)}
+.g-lista{list-style:none;margin:0 0 8px;padding:0;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.g-lista button{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 12px;color:var(--ink)}
+.g-lista li:last-child button{border-bottom:0}
+.g-emo{flex:0 0 40px;height:40px;border-radius:12px;background:var(--bg2);display:grid;place-items:center;font-size:22px}
+.g-que{flex:1;min-width:0}
+.g-que b{display:block;font-size:16.5px;line-height:1.25;overflow-wrap:anywhere}
+.g-que small{display:block;color:var(--muted);font-size:14px;line-height:1.3;margin-top:2px}
+.g-que small b{display:inline;font-size:inherit;color:var(--ink);font-weight:650}
+.g-cuanto{text-align:right;white-space:nowrap}
+.g-cuanto b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.g-cuanto small{display:block;color:var(--muted);font-size:13.5px;font-variant-numeric:tabular-nums}
+.g-barras{list-style:none;margin:0;padding:0}
+.g-barras li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:6px 0;font-size:15.5px}
+.g-barras b{font-variant-numeric:tabular-nums}
+.g-barras i{grid-column:1/-1;height:8px;border-radius:4px;background:var(--accent);opacity:.75}
+.g-pie{margin:4px 0 8px;display:grid;grid-template-columns:1fr;gap:8px}.g-pie .btn{justify-content:center}
+.g-quien h3{font-size:22px}
+.g-chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.g-chips button{min-height:46px;border:1px solid var(--borde-btn);background:var(--card);border-radius:23px;padding:8px 14px;font-size:16px;font-weight:650;color:var(--ink)}
+.g-chips button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.g-grande button{flex:1 1 40%;min-height:56px;font-size:19px}
+.g-sug{font-size:14px;color:var(--muted)}
+.g-sug button{min-height:44px;font-size:14.5px;padding:6px 12px}
+
+/* Formularios (ventana que sube desde abajo) */
+.g-dlg{width:100%;max-width:560px;max-height:100%;height:auto;margin:auto auto 0;padding:0;border:0;border-radius:22px 22px 0 0;background:var(--bg);color:var(--ink);box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+.g-dlg::backdrop{background:rgba(10,20,19,.55)}
+.g-dlg form{padding:14px 18px 0}
+@media (min-width:600px){.g-dlg{margin:auto;border-radius:22px;max-height:92vh}}
+.g-dcab{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-14px;background:var(--bg);margin:-14px -18px 4px;padding:12px 18px 6px;z-index:1}
+.g-dcab h3{margin:0;font-size:22px}.g-dcab h3:focus{outline:none}
+.g-x{width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:var(--card);font-size:18px;color:var(--ink)}
+.g-lab{display:block;margin:14px 0 6px;font-size:13.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sage)}
+.g-dlg input:not([type=checkbox]){width:100%;min-height:50px;border:1.5px solid var(--borde-btn);border-radius:14px;background:var(--card);color:var(--ink);font:inherit;font-size:18px;padding:8px 14px}
+.g-dlg input:focus{outline:3px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+.g-montofila{display:flex;gap:6px;align-items:center}
+.g-montofila #g-monto{flex:1 1 0;min-width:0;width:auto;font-family:var(--display);font-size:38px;font-weight:700;min-height:64px;font-variant-numeric:tabular-nums}
+.g-seg{display:flex;gap:4px;align-items:center}
+.g-seg button{min-height:52px;min-width:0;padding:6px 9px;font-size:15px}
+.g-check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15.5px;margin-top:4px}
+.g-check input{width:24px;height:24px;accent-color:var(--accent);margin:0}
+.g-partes label{display:flex;align-items:center;gap:10px;margin:6px 0}
+.g-partes span{flex:0 0 90px;font-weight:650}
+.g-falta{font-weight:700;color:var(--favor);margin:6px 0 0}.g-falta.mal{color:var(--contra)}
+.g-error{color:var(--contra);font-weight:700;min-height:1.2em;margin:10px 0 0}
+/* Guardar siempre visible abajo, al alcance del pulgar */
+.g-dpie{display:flex;gap:10px;position:sticky;bottom:0;z-index:1;background:var(--bg);margin:8px -18px 0;padding:10px 18px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.g-dpie .g-ok{flex:1;justify-content:center;min-height:56px;font-size:18px}
+.g-borrar{color:var(--contra);border-color:var(--contra);min-height:56px}
+
+/* Chips parejos en el formulario: categorías de a dos, personas de a tres */
+.g-dlg .g-cats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g-dlg .g-cats button{display:flex;align-items:center;gap:8px;min-height:48px;padding:6px 12px;text-align:left;font-size:15.5px;line-height:1.15;border-radius:14px}
+.g-dlg .g-cats button span{font-size:20px}
+.g-dlg .g-cats button:last-child:nth-child(odd){grid-column:1/-1}
+/* Regla de Fernando: nunca un botón suelto en la última fila. 6 columnas: de a 3 (2 c/u); si la última fila tiene 2, mitad y mitad; si tiene 1, todo el ancho */
+.g-dlg .g-pers{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.g-dlg .g-pers button{grid-column:span 2}
+.g-dlg .g-pers button:nth-child(3n+1):nth-last-child(2),.g-dlg .g-pers button:nth-child(3n+1):nth-last-child(2)+button{grid-column:span 3}
+.g-dlg .g-pers button:nth-child(3n+1):last-child{grid-column:1/-1}
+.g-dlg .g-pers button{min-height:48px;padding:6px 4px;font-size:16px;border-radius:14px}
+.g-fila2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g-fila2 input{min-width:0}
+</style>
 </head>
 <body>
 <header>
@@ -883,6 +1002,7 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
  <button role="tab" aria-selected="false" data-tab="balsas">Balsas</button>
  <button role="tab" aria-selected="false" data-tab="lista">Lista</button>
  <button role="tab" aria-selected="false" data-tab="charlar">Charlar</button>
+ <button role="tab" aria-selected="false" data-tab="gastos">Gastos</button>
 </div><button id="tema" type="button" aria-label="Modo oscuro" aria-pressed="false" title="Modo oscuro"><svg class="luna" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg><svg class="sol" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button></div></nav>
 
 <main class="wrap">
@@ -980,6 +1100,8 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
  <p class="intro">El plan queda como está. Estas son sólo ideas que salieron al revisar los datos, para conversarlas entre todos: lo que no convenza, se deja como está.</p>
  <div id="props"></div>
 </section>
+
+<section id="gastos" class="panel" aria-label="Gastos del grupo"></section>
 
 <footer>
  Datos sumados el 6 y 7/10/2026 de Gendarmería (pasos), Vialidad de Santa Cruz (parte del 6/10), Naviera Somarco y Transportes del Estuario (balsas), MOP Aysén (obras), CONAF, registro de combustibles de Chile y Secretaría de Energía. Mapa: OpenStreetMap y Esri; km calculados con OSRM y ripio marcado en forma aproximada. Los horarios y el estado de las rutas cambian: revisarlos la semana antes de salir.
@@ -1903,6 +2025,346 @@ const temaB=document.getElementById('tema');
 function marcarTema(){temaB.setAttribute('aria-pressed',document.documentElement.dataset.tema==='oscuro')}
 temaB.onclick=()=>{const o=document.documentElement.dataset.tema!=='oscuro';document.documentElement.dataset.tema=o?'oscuro':'claro';try{localStorage.setItem('guia-austral-tema',o?'oscuro':'claro')}catch(e){}marcarTema()};
 marcarTema();
+</script>
+<script id="gastos-js">
+/* ---------- Gastos del grupo (planilla de Google vía Apps Script; ver gastos/Code.gs) ---------- */
+(function(){
+const G_URL='https://script.google.com/macros/s/AKfycbwdQcg_2w4yfz8oOasevCjKIe7NTuxGs9A7kK8vdZhPbYhu44uKhNNkD27zoagDcV2vig/exec';
+const PERS=['Walter','Gustavo','Pablo','Fernando','Juan'];
+const CATS={nafta:['⛽','Nafta'],alojamiento:['🏨','Alojamiento'],comida:['🍽️','Comida'],balsa:['⛴️','Balsa'],taller:['🛠️','Repuestos y taller'],tramites:['🛂','Trámites'],otros:['🧾','Otros']};
+const MON={ARS:'Pesos',CLP:'Pesos chilenos',USD:'Dólares'};
+
+/* ===== Cuentas (sin pantalla: se prueban con node gastos/test_cuentas.js) ===== */
+// Pasa un monto a la moneda de referencia. null si falta el tipo de cambio que hace falta.
+function aRef(monto,mon,ref,cb){
+ if(mon===ref)return monto;
+ let usd;
+ if(mon==='USD')usd=monto;else if(mon==='ARS'){if(!(cb.ars>0))return null;usd=monto/cb.ars}else{if(!(cb.clp>0))return null;usd=monto/cb.clp}
+ if(ref==='USD')return usd;
+ return cb.ars>0?usd*cb.ars:null;
+}
+// Reparte un entero (centavos) según pesos, sin perder ni sumar un centavo (resto mayor).
+function repartir(total,pesos){
+ const ns=Object.keys(pesos),s=ns.reduce((a,n)=>a+pesos[n],0),out={};let usado=0;
+ const restos=ns.map(n=>{const exacto=total*pesos[n]/s,piso=Math.floor(exacto);out[n]=piso;usado+=piso;return [n,exacto-piso]});
+ restos.sort((a,b)=>b[1]-a[1]||PERS.indexOf(a[0])-PERS.indexOf(b[0]));
+ for(let i=0;i<total-usado;i++)out[restos[i][0]]++;
+ return out;
+}
+// Todo en enteros: centavos de dólar, o pesos enteros. Devuelve lo que pagó cada uno, lo que le toca y el saldo.
+function cuentas(gastos,ref,cb,pers){
+ pers=pers||PERS;const u=ref==='USD'?100:1,pago={},toca={},saldo={};let total=0,faltan=0;
+ pers.forEach(n=>{pago[n]=0;toca[n]=0});
+ gastos.forEach(g=>{
+  if(g.borrado)return;
+  const v=aRef(g.monto,g.mon,ref,cb);if(v===null){faltan++;return}
+  const c=Math.round(v*u);total+=c;
+  pago[g.pago]=(pago[g.pago]||0)+c;
+  const r=repartir(c,g.div);for(const n in r)toca[n]=(toca[n]||0)+r[n];
+ });
+ Object.keys(pago).forEach(n=>saldo[n]=pago[n]-toca[n]);
+ return {u,pago,toca,saldo,total,faltan};
+}
+// La menor cantidad de transferencias: se buscan los grupos más chicos que se cancelan entre sí
+// (con 5 personas se revisan todas las combinaciones) y adentro de cada grupo se salda de mayor a mayor.
+function liquidar(saldo){
+ const ps=Object.keys(saldo).filter(n=>saldo[n]!==0),memo={};
+ const suma=m=>ps.reduce((s,n,i)=>m>>i&1?s+saldo[n]:s,0);
+ function mejor(m){
+  if(!m)return [];if(memo[m])return memo[m];
+  const bajo=m&-m;let r=[m];
+  for(let s=(m-1)&m;s>0;s=(s-1)&m){if(!(s&bajo)||suma(s)!==0)continue;const x=[s].concat(mejor(m^s));if(x.length>r.length)r=x}
+  return memo[m]=r;
+ }
+ const pagos=[];
+ mejor((1<<ps.length)-1).forEach(m=>{
+  const deben=[],cobran=[];
+  ps.forEach((n,i)=>{if(m>>i&1)(saldo[n]<0?deben:cobran).push([n,Math.abs(saldo[n])])});
+  while(deben.length&&cobran.length){
+   deben.sort((a,b)=>b[1]-a[1]);cobran.sort((a,b)=>b[1]-a[1]);
+   const d=deben[0],c=cobran[0],x=Math.min(d[1],c[1]);
+   pagos.push({de:d[0],a:c[0],monto:x});d[1]-=x;c[1]-=x;
+   if(!d[1])deben.shift();if(!c[1])cobran.shift();
+  }
+ });
+ return pagos.sort((a,b)=>b.monto-a.monto);
+}
+function numero(t){ // "52.300" "52300,50" "45,5" "12.5" → número
+ t=String(t||'').replace(/[^\d.,]/g,'');if(!t)return NaN;
+ if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');
+ else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');
+ return Number(t);
+}
+if(typeof module!=='undefined'){module.exports={aRef,repartir,cuentas,liquidar,numero};return}
+
+/* ===== Guardado en el teléfono ===== */
+const K='austral-gastos-',lee=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(K+k));return v==null?d:v}catch(e){return d}},
+ pone=(k,v)=>{try{localStorage.setItem(K+k,JSON.stringify(v))}catch(e){}};
+let datos=lee('datos',{gastos:{},cambio:{ars:0,clp:0,fecha:'',por:''},ts:0});
+let cola=lee('cola',{});            // gastos cargados o cambiados que todavía no llegaron a la planilla
+let cambioPend=lee('cambio-pend',null);
+let yo=lee('yo',null),ref=lee('ref','USD'),ultMon=lee('mon','ARS');
+let estado='',sincronizando=false,otraVez=false;
+
+const todos=()=>{const m=Object.assign({},datos.gastos,cola);return Object.values(m)};
+const activos=()=>todos().filter(g=>!g.borrado).sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.id.localeCompare(a.id));
+const cambio=()=>cambioPend||datos.cambio;
+const nuevoId=()=>Date.now().toString(36)+'-'+[...crypto.getRandomValues(new Uint8Array(6))].map(b=>b.toString(16).padStart(2,'0')).join('');
+const hoy=()=>new Date().toLocaleDateString('sv');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const nf0=new Intl.NumberFormat('es-AR',{maximumFractionDigits:0}),nf2=new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function plata(v,mon){ // v en unidades (no centavos)
+ const n=Math.abs(v),s=(v<0?'−':'')+(mon==='USD'?'US$ ':mon==='CLP'?'CLP ':'$ ');
+ return s+(mon==='USD'&&Math.round(n*100)%100?nf2:nf0).format(mon==='USD'?Math.round(n*100)/100:Math.round(n));
+}
+const enRef=c=>plata(c/(ref==='USD'?100:1),ref);
+const diaCorto=f=>{if(!/^\d{4}-\d\d-\d\d$/.test(f))return esc(f);const [a,m,d]=f.split('-').map(Number);return new Date(a,m-1,d).toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'numeric'})};
+const quienes=div=>{const ns=Object.keys(div).map(esc);if(ns.length===PERS.length&&new Set(Object.values(div)).size===1)return 'entre todos';return (new Set(Object.values(div)).size>1?'partes distintas: ':'entre ')+ns.join(', ')};
+
+/* ===== Sincronización con la planilla ===== */
+async function pedir(cuerpo){
+ const ac=new AbortController(),t=setTimeout(()=>ac.abort(),25000);
+ try{
+  const r=await fetch(G_URL,cuerpo?{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(cuerpo),redirect:'follow',signal:ac.signal}:{redirect:'follow',signal:ac.signal,cache:'no-store'});
+  const j=await r.json();if(!j.ok)throw new Error(j.error||'error');return j;
+ }finally{clearTimeout(t)}
+}
+function recibir(j,mandados){
+ const m={};j.gastos.forEach(g=>m[g.id]=g);
+ datos={gastos:m,cambio:j.cambio,ts:Date.now()};pone('datos',datos);
+ (mandados||[]).forEach(g=>{if(cola[g.id]&&cola[g.id].mod===g.mod)delete cola[g.id]}); // si se editó mientras subía, queda para la próxima
+ for(const id in cola)if(m[id]&&m[id].mod>=cola[id].mod)delete cola[id];
+ pone('cola',cola);
+}
+async function sincronizar(){
+ if(sincronizando){otraVez=true;return}
+ sincronizando=true;estado='subiendo';pintarEstado();
+ try{
+  const mandados=Object.values(cola).slice(0,100);
+  let j=mandados.length?await pedir({accion:'guardar',gastos:mandados}):null;
+  if(cambioPend){const c=cambioPend;j=await pedir(Object.assign({accion:'cambio'},c));if(cambioPend===c){cambioPend=null;pone('cambio-pend',null)}}
+  if(!j)j=await pedir(null);
+  recibir(j,mandados);estado='ok';
+ }catch(e){estado='sinred'}
+ sincronizando=false;pintar();
+ if(otraVez||(estado==='ok'&&Object.keys(cola).length)){otraVez=false;setTimeout(sincronizar,300)}
+}
+function guardarGasto(g){g.mod=Math.max(Date.now(),((datos.gastos[g.id]||{}).mod||0)+1,((cola[g.id]||{}).mod||0)+1);cola[g.id]=g;pone('cola',cola);pintar();sincronizar()}
+
+/* ===== Pantalla ===== */
+const panel=document.getElementById('gastos');
+function pintarEstado(){
+ const e=panel.querySelector('.g-estado');if(!e)return;
+ const n=Object.keys(cola).length+(cambioPend?1:0);
+ let t,c='';
+ if(estado==='subiendo')t='↻ Sincronizando…';
+ else if(n)t=`⏳ ${n===1?'1 gasto sin subir':n+' gastos sin subir'}`+(estado==='sinred'?' · se suben solos al volver la señal':''),c='pend';
+ else if(estado==='sinred')t='Sin señal · mostrando lo guardado'+(datos.ts?' el '+new Date(datos.ts).toLocaleString('es-AR',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}):''),c='pend';
+ else if(datos.ts)t='✓ Sincronizado',c='ok';
+ else t='Conectando con la planilla…';
+ e.textContent=t;e.className='g-estado '+c;
+}
+function pintar(){
+ if(!yo){
+  panel.innerHTML=`<h2>Gastos</h2><p class="intro">Para anotar quién pagó qué y saber al final quién le debe a quién. Lo que anota uno lo ven todos.</p>
+  <div class="tarjeta g-quien"><h3>¿Quién sos?</h3><p class="muted">Queda guardado en este teléfono. Se puede cambiar.</p><div class="g-chips g-grande">${PERS.map(n=>`<button type="button" data-yo="${n}">${n}</button>`).join('')}</div></div>`;
+  return;
+ }
+ const cb=cambio(),gs=activos(),k=cuentas(gs,ref,cb),pagos=liquidar(k.saldo),mio=k.saldo[yo]||0;
+ const faltaCambio=!(cb.ars>0&&cb.clp>0);
+ let h=`<div class="g-cab"><h2>Gastos</h2><button type="button" class="g-link" data-acc="quien">Sos <b>${esc(yo)}</b> · cambiar</button></div>
+ <p class="g-estado" aria-live="polite"></p>
+${gs.length?`<div class="g-resumen">
+  <div class="g-yo ${mio>0?'favor':mio<0?'contra':''}"><span>Tu saldo</span><b>${mio?(mio>0?'+':'')+enRef(mio):enRef(0)}</b><small>${mio>0?'▲ te deben':mio<0?'▼ debés':'estás al día'}</small></div>
+  <div class="g-tot"><span>Total del grupo</span><b>${enRef(k.total)}</b><small>${gs.length} ${gs.length===1?'gasto':'gastos'}</small></div>
+ </div>
+ <div class="g-ref" role="group" aria-label="Moneda para las cuentas"><span>Cuentas en</span>${['USD','ARS'].map(m=>`<button type="button" data-ref="${m}" aria-pressed="${ref===m}">${m==='USD'?'Dólares':'Pesos'}</button>`).join('')}</div>`:''}`;
+ if(faltaCambio||k.faltan)h+=`<div class="ojo"><b>Falta el tipo de cambio.</b> ${k.faltan?`Hay ${k.faltan} ${k.faltan===1?'gasto que no se puede':'gastos que no se pueden'} pasar a ${ref==='USD'?'dólares':'pesos'} y no entran en las cuentas. `:''}<button type="button" class="btn" data-acc="cambio">⚙️ Fijar el cambio</button></div>`;
+ // Quién le paga a quién
+ if(gs.length){h+=`<section class="tarjeta g-liq"><h3>¿Quién le paga a quién?</h3>`;
+ if(!pagos.length)h+=`<p class="g-cero">🎉 Están todos a mano.</p>`;
+ else h+=`<ul class="g-pagos">${pagos.map(p=>`<li class="${p.de===yo||p.a===yo?'mio':''}"><span class="g-par"><b>${p.de}</b> <span class="g-fl"><span class="g-vh">le paga a</span>→</span> <b>${p.a}</b></span><b class="g-monto">${enRef(p.monto)}</b></li>`).join('')}</ul><p class="muted g-chico">${pagos.length===1?'Con una sola transferencia':`Con ${pagos.length} transferencias`} quedan todos a mano.</p>`;
+ h+=`<button type="button" class="btn prim g-wa" data-acc="wa">Compartir por WhatsApp</button></section>`}
+ // Saldos
+ if(gs.length)h+=`<section class="tarjeta"><h3>Saldos</h3><ul class="g-saldos">${PERS.map(n=>{const s=k.saldo[n]||0;return `<li><div><b>${n}</b><small>pagó ${enRef(k.pago[n]||0)} · le toca ${enRef(k.toca[n]||0)}</small></div><span class="${s>0?'favor':s<0?'contra':''}">${s?(s>0?'+':'')+enRef(s):'0'}<small>${s>0?'a favor':s<0?'en contra':'al día'}</small></span></li>`}).join('')}</ul></section>`;
+ // Lista
+ h+=`<section>`+(gs.length?`<h3 class="g-tit">Lo anotado</h3>`:'');
+ if(!gs.length)h+=`<div class="tarjeta g-vacio"><span aria-hidden="true">🧾</span><p>Todavía no hay gastos.</p></div>`;
+ else{const dias=[];gs.forEach(g=>{const d=dias[dias.length-1];if(d&&d[0]===g.fecha)d[1].push(g);else dias.push([g.fecha,[g]])});
+  h+=dias.map(([dia,lista])=>`<h4 class="g-dia">${diaCorto(dia)}</h4><ul class="g-lista">${lista.map(g=>{const c=CATS[g.cat]||CATS.otros,v=aRef(g.monto,g.mon,ref,cb);return `<li><button type="button" data-ed="${g.id}"><span class="g-emo" aria-hidden="true">${c[0]}</span><span class="g-que"><b>${esc(g.desc||c[1])}</b><small>Pagó <b>${esc(g.pago)}</b> · ${quienes(g.div)}${g.cargo!==g.pago?' · anotó '+esc(g.cargo):''}${cola[g.id]?' · ⏳ sin subir':''}</small></span><span class="g-cuanto"><b>${plata(g.monto,g.mon)}</b>${g.mon!==ref&&v!==null?`<small>≈ ${plata(v,ref)}</small>`:''}</span></button></li>`}).join('')}</ul>`).join('')}
+ h+=`</section>`;
+ // Totales
+ if(gs.length){
+  const porCat={},porDia={};
+  gs.forEach(g=>{const v=aRef(g.monto,g.mon,ref,cb);if(v===null)return;const c=Math.round(v*k.u);porCat[g.cat]=(porCat[g.cat]||0)+c;porDia[g.fecha]=(porDia[g.fecha]||0)+c});
+  const barras=(o,et)=>{const max=Math.max(...Object.values(o),1);return `<ul class="g-barras">${Object.entries(o).map(([x,v])=>`<li><span>${et(x)}</span><b>${enRef(v)}</b><i style="width:${Math.max(2,100*v/max)}%"></i></li>`).join('')}</ul>`};
+  h+=`<section class="tarjeta"><h3>Por categoría</h3>${barras(Object.fromEntries(Object.entries(porCat).sort((a,b)=>b[1]-a[1])),x=>(CATS[x]||CATS.otros).join(' '))}</section>
+  <section class="tarjeta"><h3>Por día</h3>${barras(Object.fromEntries(Object.entries(porDia).sort((a,b)=>a[0].localeCompare(b[0]))),diaCorto)}</section>`;
+ }
+ h+=`<button type="button" class="g-agregar" data-acc="nuevo"><span aria-hidden="true">+</span> Agregar gasto</button><div class="acciones g-pie"><button type="button" class="btn" data-acc="cambio">⚙️ Cambio${cb.ars>0?`: US$ 1 = ${plata(cb.ars,'ARS')} · ${plata(cb.clp,'CLP')}`:''}</button>${gs.length?'<button type="button" class="btn" data-acc="csv">Bajar planilla (CSV)</button>':''}</div>`;
+ panel.innerHTML=h;pintarEstado();
+}
+
+/* ===== Formulario de gasto ===== */
+const dlg=document.createElement('dialog');dlg.className='g-dlg';document.body.appendChild(dlg);
+let f=null; // el gasto que se está editando
+function abrir(g){
+ f=g?JSON.parse(JSON.stringify(g)):{id:nuevoId(),fecha:hoy(),desc:'',cat:'',monto:0,mon:ultMon,pago:yo,div:Object.fromEntries(PERS.map(n=>[n,1])),cargo:yo,borrado:0,nuevo:1};
+ f.distintas=new Set(Object.values(f.div)).size>1;
+ dlg.innerHTML=`<form method="dialog" novalidate>
+ <div class="g-dcab"><h3 tabindex="-1" autofocus>${f.nuevo?'Nuevo gasto':'Editar gasto'}</h3><button type="button" class="g-x" data-acc="cerrar" aria-label="Cerrar">✕</button></div>
+ <label class="g-lab" for="g-monto">¿Cuánto?</label>
+ <div class="g-montofila"><input id="g-monto" inputmode="decimal" autocomplete="off" placeholder="0" value="${f.monto?String(f.monto).replace('.',','):''}">
+ <div class="g-seg" role="group" aria-label="Moneda">${Object.keys(MON).map(m=>`<button type="button" data-mon="${m}" aria-pressed="${f.mon===m}">${m}</button>`).join('')}</div></div>
+ <p class="g-lab">¿En qué?</p>
+ <div class="g-chips g-cats" role="group" aria-label="Categoría">${Object.entries(CATS).map(([c,[e,t]])=>`<button type="button" data-cat="${c}" aria-pressed="${f.cat===c}"><span aria-hidden="true">${e}</span> ${t}</button>`).join('')}</div>
+ <p class="g-lab">¿Quién pagó?</p>
+ <div class="g-chips g-pers" role="group" aria-label="Quién pagó">${PERS.map(n=>`<button type="button" data-pago="${n}" aria-pressed="${f.pago===n}">${n}</button>`).join('')}</div>
+ <p class="g-lab">¿Entre quiénes se divide?</p>
+ <div class="g-entre"></div>
+ <div class="g-fila2"><div><label class="g-lab" for="g-desc">Detalle</label>
+ <input id="g-desc" maxlength="120" autocomplete="off" placeholder="Ej.: nafta en Chaitén" value="${esc(f.desc)}"></div>
+ <div><label class="g-lab" for="g-fecha">Fecha</label>
+ <input id="g-fecha" type="date" value="${f.fecha}"></div></div>
+ <p class="g-error" role="alert"></p>
+ <div class="g-dpie">${f.nuevo?'':'<button type="button" class="btn g-borrar" data-acc="borrar">Borrar</button>'}<button type="submit" class="btn prim g-ok">${f.nuevo?'Guardar gasto':'Guardar cambios'}</button></div>
+ </form>`;
+ pintarEntre();
+ dlg.showModal();
+ if(f.nuevo)setTimeout(()=>dlg.querySelector('#g-monto').focus(),60);
+}
+function pintarEntre(){
+ const c=dlg.querySelector('.g-entre'),total=numero(dlg.querySelector('#g-monto').value);
+ let h=`<div class="g-chips g-pers" role="group" aria-label="Entre quiénes">${PERS.map(n=>`<button type="button" data-div="${n}" aria-pressed="${n in f.div}">${n in f.div?'✓ ':''}${n}</button>`).join('')}</div>
+ <label class="g-check"><input type="checkbox" id="g-dist" ${f.distintas?'checked':''}> Partes distintas (cada uno un monto)</label>`;
+ if(f.distintas){
+  const ns=PERS.filter(n=>n in f.div);
+  h+=`<div class="g-partes">${ns.map(n=>`<label><span>${n}</span><input inputmode="decimal" data-parte="${n}" value="${f.div[n]?String(f.div[n]).replace('.',','):''}" placeholder="0"></label>`).join('')}
+  <p class="g-falta"></p></div>`;
+ }else if(total>0&&Object.keys(f.div).length)h+=`<p class="muted g-chico">${plata(total/Object.keys(f.div).length,f.mon)} cada uno</p>`;
+ c.innerHTML=h;falta();
+}
+function falta(){ // cuánto falta repartir con "partes distintas"
+ const p=dlg.querySelector('.g-falta');if(!p)return;
+ const total=numero(dlg.querySelector('#g-monto').value),s=Object.values(f.div).reduce((a,b)=>a+b,0),dif=Math.round(((total||0)-s)*100)/100;
+ p.textContent=!total?'Primero el monto total.':dif>0?`Faltan ${plata(dif,f.mon)} por repartir`:dif<0?`Sobran ${plata(-dif,f.mon)}`:'✓ Cierra justo';p.classList.toggle('mal',!!(total&&dif));
+}
+function leerForm(){
+ f.monto=numero(dlg.querySelector('#g-monto').value);
+ f.desc=dlg.querySelector('#g-desc').value.trim();
+ f.fecha=dlg.querySelector('#g-fecha').value||hoy();
+}
+function validarForm(){
+ leerForm();
+ if(!(f.monto>0))return 'Falta el monto.';
+ if(!Object.keys(f.div).length)return 'Elegí al menos una persona para dividir.';
+ if(f.distintas){
+  const s=Object.values(f.div).reduce((a,b)=>a+b,0);
+  if(Object.values(f.div).some(v=>!(v>0)))return 'Cada uno tiene que tener un monto (o sacalo de la lista).';
+  if(Math.abs(s-f.monto)>0.009)return 'Las partes no suman el total.';
+ }
+ return '';
+}
+dlg.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b||!f)return;
+ if(b.dataset.acc==='cerrar'){dlg.close();return}
+ if(b.dataset.mon){leerForm();f.mon=b.dataset.mon;dlg.querySelectorAll('[data-mon]').forEach(x=>x.setAttribute('aria-pressed',x===b));pintarEntre();return}
+ if(b.dataset.cat){f.cat=f.cat===b.dataset.cat?'':b.dataset.cat;dlg.querySelectorAll('[data-cat]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat===f.cat));return}
+ if(b.dataset.pago){f.pago=b.dataset.pago;dlg.querySelectorAll('[data-pago]').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
+ if(b.dataset.div){const n=b.dataset.div;if(n in f.div)delete f.div[n];else f.div[n]=f.distintas?0:1;
+  if(f.distintas&&Object.keys(f.div).length)Object.keys(f.div).forEach(x=>{if(!f.div[x])f.div[x]=0});
+  pintarEntre();return}
+ if(b.dataset.acc==='borrar'){
+  if(!confirm(`¿Borrar "${f.desc||(CATS[f.cat]||CATS.otros)[1]}" (${plata(f.monto,f.mon)})?\nSe borra para todos.`))return;
+  const g=Object.assign({},todos().find(x=>x.id===f.id),{borrado:1});dlg.close();guardarGasto(g);return}
+});
+dlg.addEventListener('input',e=>{
+ const t=e.target;
+ if(t.id==='g-dist'){leerForm();f.distintas=t.checked;
+  if(f.distintas){const ns=Object.keys(f.div),cada=f.monto>0?Math.round(f.monto/ns.length*100)/100:0;ns.forEach((n,i)=>f.div[n]=cada);
+   if(f.monto>0&&ns.length){const s=cada*ns.length;f.div[ns[0]]=Math.round((cada+f.monto-s)*100)/100}}
+  else Object.keys(f.div).forEach(n=>f.div[n]=1);
+  pintarEntre();return}
+ if(t.dataset.parte){f.div[t.dataset.parte]=numero(t.value)||0;  falta();return}
+ if(t.id==='g-monto'&&!f.distintas)pintarEntre();
+ if(t.id==='g-monto'&&f.distintas)falta();
+});
+dlg.addEventListener('submit',e=>{
+ e.preventDefault();
+ const err=validarForm();dlg.querySelector('.g-error').textContent=err;if(err)return;
+ if(!f.cat)f.cat='otros';
+ ultMon=f.mon;pone('mon',ultMon);
+ const g={id:f.id,fecha:f.fecha,desc:f.desc,cat:f.cat,monto:Math.round(f.monto*100)/100,mon:f.mon,pago:f.pago,div:{},cargo:f.nuevo?yo:f.cargo,borrado:0};
+ PERS.forEach(n=>{if(n in f.div)g.div[n]=f.distintas?Math.round(f.div[n]*100)/100:1});
+ dlg.close();guardarGasto(g);
+});
+dlg.addEventListener('close',()=>{f=null});
+
+/* ===== Tipo de cambio ===== */
+const dlgC=document.createElement('dialog');dlgC.className='g-dlg g-dlgc';document.body.appendChild(dlgC);
+function abrirCambio(){
+ const cb=cambio();
+ dlgC.innerHTML=`<form method="dialog" novalidate><div class="g-dcab"><h3 tabindex="-1" autofocus>⚙️ Tipo de cambio</h3><button type="button" class="g-x" data-acc="cerrar" aria-label="Cerrar">✕</button></div>
+ <p class="muted g-chico">Uno solo para todo el grupo: con esto se pasan los gastos a dólares o a pesos. Cada gasto queda en la moneda en que se pagó.${cb.por?` Último cambio: ${esc(cb.por)}, ${esc(cb.fecha)}.`:''}</p>
+ <label class="g-lab" for="g-ars">Pesos argentinos por 1 dólar</label><input id="g-ars" inputmode="decimal" value="${cb.ars?String(cb.ars).replace('.',','):''}" placeholder="Ej.: 1.540">
+ <div class="g-chips g-sug" data-para="g-ars"></div>
+ <label class="g-lab" for="g-clp">Pesos chilenos por 1 dólar</label><input id="g-clp" inputmode="decimal" value="${cb.clp?String(cb.clp).replace('.',','):''}" placeholder="Ej.: 950">
+ <div class="g-chips g-sug" data-para="g-clp"></div>
+ <p class="g-error" role="alert"></p>
+ <div class="g-dpie"><button type="submit" class="btn prim g-ok">Guardar para todos</button></div></form>`;
+ dlgC.showModal();
+ const sug=(id,arr)=>{const c=dlgC.querySelector(`[data-para="${id}"]`);if(c)c.innerHTML=arr.map(([t,v])=>`<button type="button" data-val="${v}" data-para="${id}">${t} ${nf0.format(v)}</button>`).join('')};
+ sug('g-ars',[]);sug('g-clp',[]);
+ dlgC.querySelector('[data-para="g-ars"]').textContent='Buscando la cotización de hoy…';
+ fetch('https://dolarapi.com/v1/dolares').then(r=>r.json()).then(a=>{const v=c=>(a.find(x=>x.casa===c)||{}).venta;
+  sug('g-ars',[['MEP',v('bolsa')],['Tarjeta',v('tarjeta')],['Oficial',v('oficial')],['Blue',v('blue')]].filter(x=>x[1]))}).catch(()=>{const c=dlgC.querySelector('[data-para="g-ars"]');if(c)c.textContent='Sin señal para sugerir.'});
+ fetch('https://open.er-api.com/v6/latest/USD').then(r=>r.json()).then(a=>sug('g-clp',[['Hoy',Math.round(a.rates.CLP)]])).catch(()=>{});
+}
+dlgC.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.acc==='cerrar')dlgC.close();
+ if(b.dataset.val){dlgC.querySelector('#'+b.dataset.para).value=String(b.dataset.val).replace('.',',')}});
+dlgC.addEventListener('submit',e=>{e.preventDefault();
+ const ars=numero(dlgC.querySelector('#g-ars').value),clp=numero(dlgC.querySelector('#g-clp').value);
+ if(!(ars>0&&clp>0)){dlgC.querySelector('.g-error').textContent='Faltan los dos valores.';return}
+ cambioPend={ars,clp,por:yo,fecha:hoy()};pone('cambio-pend',cambioPend);dlgC.close();pintar();sincronizar()});
+
+/* ===== WhatsApp y CSV ===== */
+function textoWA(){
+ const cb=cambio(),gs=activos(),k=cuentas(gs,ref,cb),pagos=liquidar(k.saldo);
+ let t=`🏍️ *Austral 2026 · Gastos del grupo*\n💰 Total: *${enRef(k.total)}* en ${gs.length===1?'1 gasto':gs.length+' gastos'}\n`;
+ {const np=Object.keys(cola).length;if(np)t+=`⏳ Ojo: ${np===1?'1 gasto todavía no se subió':np+' gastos todavía no se subieron'} (falta señal)\n`;}
+ if(cb.ars>0)t+=`💱 Cambio: US$ 1 = ${plata(cb.ars,'ARS')} = ${plata(cb.clp,'CLP')}\n`;
+ if(k.faltan)t+=`⚠️ ${k.faltan===1?'1 gasto sin pasar':k.faltan+' gastos sin pasar'} (falta el tipo de cambio)\n`;
+ t+=`\n*¿Quién le paga a quién?*\n`+(pagos.length?pagos.map(p=>`💸 ${p.de} → ${p.a}: *${enRef(p.monto)}*`).join('\n'):'🎉 Estamos todos a mano')+`\n\n*Saldos*\n`;
+ t+=PERS.map(n=>{const s=k.saldo[n]||0;return `${s>0?'🟢':s<0?'🔴':'⚪'} ${n}: ${s?(s>0?'+':'')+enRef(s):'al día'} (pagó ${enRef(k.pago[n]||0)})`}).join('\n');
+ return t+`\n\nDetalle en la guía, pestaña Gastos.`;
+}
+function csv(){
+ const cb=cambio(),q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+ const filas=[['Fecha','Descripción','Categoría','Monto','Moneda','Pagó','Entre','Anotó','En '+ref]].concat(activos().reverse().map(g=>{const v=aRef(g.monto,g.mon,ref,cb);
+  return [g.fecha,g.desc,(CATS[g.cat]||CATS.otros)[1],String(g.monto).replace('.',','),g.mon,g.pago,quienes(g.div),g.cargo,v===null?'':String(Math.round(v*100)/100).replace('.',',')]}));
+ const blob=new Blob(['﻿'+filas.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gastos_austral_2026.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+
+panel.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.yo){yo=b.dataset.yo;pone('yo',yo);pintar();return}
+ if(b.dataset.ref){ref=b.dataset.ref;pone('ref',ref);pintar();return}
+ if(b.dataset.ed){const g=todos().find(x=>x.id===b.dataset.ed);if(g)abrir(g);return}
+ const a=b.dataset.acc;
+ if(a==='quien'){yo=null;pone('yo',null);pintar()}
+ if(a==='nuevo')abrir(null);
+ if(a==='cambio')abrirCambio();
+ if(a==='wa')window.open('https://wa.me/?text='+encodeURIComponent(textoWA()),'_blank','noopener');
+ if(a==='csv')csv();
+});
+document.querySelectorAll('nav [role=tab]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.tab==='gastos'){pintar();sincronizar()}}));
+window.addEventListener('online',sincronizar);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sincronizar()});
+setInterval(()=>{if(document.visibilityState==='visible'&&(Object.keys(cola).length||cambioPend||panel.classList.contains('active')))sincronizar()},45000);
+pintar();sincronizar();
+})();
 </script>
 </body>
 </html>
