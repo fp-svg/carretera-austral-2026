@@ -976,6 +976,10 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
 .g-dlg .g-pers button{min-height:48px;padding:6px 4px;font-size:16px;border-radius:14px}
 .g-fila2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .g-fila2 input{min-width:0}
+.g-dia{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.g-diatot{font-variant-numeric:tabular-nums;letter-spacing:0;text-transform:none;color:var(--muted)}
+.g-saldos .g-apoyo>span{font-family:system-ui,-apple-system,sans-serif;font-size:15px;color:var(--muted)}
+.g-nota{margin:6px 0 4px}
 </style>
 </head>
 <body>
@@ -2031,6 +2035,7 @@ marcarTema();
 (function(){
 const G_URL='https://script.google.com/macros/s/AKfycbwdQcg_2w4yfz8oOasevCjKIe7NTuxGs9A7kK8vdZhPbYhu44uKhNNkD27zoagDcV2vig/exec';
 const PERS=['Walter','Gustavo','Pablo','Fernando','Juan'];
+const APOYO='Juan',PAGAN=PERS.filter(n=>n!==APOYO); // Juan va de apoyo en la camioneta: el grupo le cubre todo
 const CATS={nafta:['⛽','Nafta'],alojamiento:['🏨','Alojamiento'],comida:['🍽️','Comida'],balsa:['⛴️','Balsa'],taller:['🛠️','Repuestos y taller'],tramites:['🛂','Trámites'],otros:['🧾','Otros']};
 const MON={ARS:'Pesos',CLP:'Pesos chilenos',USD:'Dólares'};
 
@@ -2052,15 +2057,18 @@ function repartir(total,pesos){
  return out;
 }
 // Todo en enteros: centavos de dólar, o pesos enteros. Devuelve lo que pagó cada uno, lo que le toca y el saldo.
-function cuentas(gastos,ref,cb,pers){
- pers=pers||PERS;const u=ref==='USD'?100:1,pago={},toca={},saldo={};let total=0,faltan=0;
+// La parte del que va de apoyo (si lo tildaron) se reparte en partes iguales entre los que pagan.
+function cuentas(gastos,ref,cb,pers,apoyo,pagan){
+ pers=pers||PERS;if(apoyo===undefined){apoyo=APOYO;pagan=PAGAN}const u=ref==='USD'?100:1,pago={},toca={},saldo={};let total=0,faltan=0;
  pers.forEach(n=>{pago[n]=0;toca[n]=0});
  gastos.forEach(g=>{
   if(g.borrado)return;
   const v=aRef(g.monto,g.mon,ref,cb);if(v===null){faltan++;return}
   const c=Math.round(v*u);total+=c;
   pago[g.pago]=(pago[g.pago]||0)+c;
-  const r=repartir(c,g.div);for(const n in r)toca[n]=(toca[n]||0)+r[n];
+  const r=repartir(c,g.div);
+  if(apoyo&&r[apoyo]){const x=repartir(r[apoyo],Object.fromEntries(pagan.map(n=>[n,1])));delete r[apoyo];for(const n in x)r[n]=(r[n]||0)+x[n]}
+  for(const n in r)toca[n]=(toca[n]||0)+r[n];
  });
  Object.keys(pago).forEach(n=>saldo[n]=pago[n]-toca[n]);
  return {u,pago,toca,saldo,total,faltan};
@@ -2095,7 +2103,7 @@ function numero(t){ // "52.300" "52300,50" "45,5" "12.5" → número
  else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');
  return Number(t);
 }
-if(typeof module!=='undefined'){module.exports={aRef,repartir,cuentas,liquidar,numero};return}
+if(typeof module!=='undefined'){module.exports={aRef,repartir,cuentas,liquidar,numero,APOYO,PAGAN};return}
 
 /* ===== Guardado en el teléfono ===== */
 const K='austral-gastos-',lee=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(K+k));return v==null?d:v}catch(e){return d}},
@@ -2103,7 +2111,7 @@ const K='austral-gastos-',lee=(k,d)=>{try{const v=JSON.parse(localStorage.getIte
 let datos=lee('datos',{gastos:{},cambio:{ars:0,clp:0,fecha:'',por:''},ts:0});
 let cola=lee('cola',{});            // gastos cargados o cambiados que todavía no llegaron a la planilla
 let cambioPend=lee('cambio-pend',null);
-let yo=lee('yo',null),ref=lee('ref','USD'),ultMon=lee('mon','ARS');
+let yo=lee('yo',null),ref=lee('ref','USD'),ultMon=lee('mon','ARS'),ultCat=lee('cat',''),ultDiv=lee('div',null);
 let estado='',sincronizando=false,otraVez=false;
 
 const todos=()=>{const m=Object.assign({},datos.gastos,cola);return Object.values(m)};
@@ -2119,7 +2127,8 @@ function plata(v,mon){ // v en unidades (no centavos)
 }
 const enRef=c=>plata(c/(ref==='USD'?100:1),ref);
 const diaCorto=f=>{if(!/^\d{4}-\d\d-\d\d$/.test(f))return esc(f);const [a,m,d]=f.split('-').map(Number);return new Date(a,m-1,d).toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'numeric'})};
-const quienes=div=>{const ns=Object.keys(div).map(esc);if(ns.length===PERS.length&&new Set(Object.values(div)).size===1)return 'entre todos';return (new Set(Object.values(div)).size>1?'partes distintas: ':'entre ')+ns.join(', ')};
+const nom=n=>n===APOYO?n+' (apoyo)':n;
+const quienes=div=>{const ns=Object.keys(div).map(esc),igual=new Set(Object.values(div)).size===1;if(igual&&ns.length===PERS.length)return 'entre todos';if(igual&&ns.length===PAGAN.length&&PAGAN.every(n=>n in div))return 'entre los '+PAGAN.length;return (new Set(Object.values(div)).size>1?'partes distintas: ':'entre ')+ns.join(', ')};
 
 /* ===== Sincronización con la planilla ===== */
 async function pedir(cuerpo){
@@ -2180,8 +2189,8 @@ function pintar(){
  let h=`<div class="g-cab"><h2>Gastos</h2><button type="button" class="g-link" data-acc="quien">Sos <b>${esc(yo)}</b> · cambiar</button></div>
  <p class="g-estado" aria-live="polite"></p>
 ${gs.length?`<div class="g-resumen">
-  <div class="g-yo ${mio>0?'favor':mio<0?'contra':''}"><span>Tu saldo</span><b>${mio?(mio>0?'+':'')+enRef(mio):enRef(0)}</b><small>${mio>0?'▲ te deben':mio<0?'▼ debés':'estás al día'}</small></div>
-  <div class="g-tot"><span>Total del grupo</span><b>${enRef(k.total)}</b><small>${gs.length} ${gs.length===1?'gasto':'gastos'}</small></div>
+  <div class="g-yo ${mio>0?'favor':mio<0?'contra':''}"><span>Tu saldo</span><b>${mio?(mio>0?'+':'')+enRef(mio):enRef(0)}</b><small>${mio>0?'▲ te deben':mio<0?'▼ debés':yo===APOYO&&!k.pago[yo]?'no pagás: te cubren los '+PAGAN.length:'estás al día'}</small></div>
+  <div class="g-tot"><span>Total del grupo</span><b>${enRef(k.total)}</b><small>${gs.length} ${gs.length===1?'gasto':'gastos'} · ${enRef(Math.round(k.total/PAGAN.length))} c/u entre ${PAGAN.length}</small></div>
  </div>
  <div class="g-ref" role="group" aria-label="Moneda para las cuentas"><span>Cuentas en</span>${['USD','ARS'].map(m=>`<button type="button" data-ref="${m}" aria-pressed="${ref===m}">${m==='USD'?'Dólares':'Pesos'}</button>`).join('')}</div>`:''}`;
  if(faltaCambio||k.faltan)h+=`<div class="ojo"><b>Falta el tipo de cambio.</b> ${k.faltan?`Hay ${k.faltan} ${k.faltan===1?'gasto que no se puede':'gastos que no se pueden'} pasar a ${ref==='USD'?'dólares':'pesos'} y no entran en las cuentas. `:''}<button type="button" class="btn" data-acc="cambio">⚙️ Fijar el cambio</button></div>`;
@@ -2191,12 +2200,13 @@ ${gs.length?`<div class="g-resumen">
  else h+=`<ul class="g-pagos">${pagos.map(p=>`<li class="${p.de===yo||p.a===yo?'mio':''}"><span class="g-par"><b>${esc(p.de)}</b> <span class="g-fl"><span class="g-vh">le paga a</span>→</span> <b>${esc(p.a)}</b></span><b class="g-monto">${enRef(p.monto)}</b></li>`).join('')}</ul><p class="muted g-chico">${pagos.length===1?'Con una sola transferencia':`Con ${pagos.length} transferencias`} quedan todos a mano.</p>`;
  h+=`<button type="button" class="btn prim g-wa" data-acc="wa">Compartir por WhatsApp</button></section>`}
  // Saldos
- if(gs.length)h+=`<section class="tarjeta"><h3>Saldos</h3><ul class="g-saldos">${PERS.map(n=>{const s=k.saldo[n]||0;return `<li><div><b>${n}</b><small>pagó ${enRef(k.pago[n]||0)} · le toca ${enRef(k.toca[n]||0)}</small></div><span class="${s>0?'favor':s<0?'contra':''}">${s?(s>0?'+':'')+enRef(s):'0'}<small>${s>0?'a favor':s<0?'en contra':'al día'}</small></span></li>`}).join('')}</ul></section>`;
+ if(gs.length)h+=`<section class="tarjeta"><h3>Saldos</h3><ul class="g-saldos">${PERS.map(n=>{const s=k.saldo[n]||0;if(n===APOYO&&!k.pago[n])return `<li class="g-apoyo"><div><b>${nom(n)}</b><small>su parte la cubren los ${PAGAN.length}</small></div><span>no paga</span></li>`;return `<li><div><b>${nom(n)}</b><small>pagó ${enRef(k.pago[n]||0)} · le toca ${enRef(k.toca[n]||0)}</small></div><span class="${s>0?'favor':s<0?'contra':''}">${s?(s>0?'+':'')+enRef(s):'0'}<small>${s>0?'a favor':s<0?'en contra':'al día'}</small></span></li>`}).join('')}</ul></section>`;
  // Lista
  h+=`<section>`+(gs.length?`<h3 class="g-tit">Lo anotado</h3>`:'');
  if(!gs.length)h+=`<div class="tarjeta g-vacio"><span aria-hidden="true">🧾</span><p>Todavía no hay gastos.</p></div>`;
  else{const dias=[];gs.forEach(g=>{const d=dias[dias.length-1];if(d&&d[0]===g.fecha)d[1].push(g);else dias.push([g.fecha,[g]])});
-  h+=dias.map(([dia,lista])=>`<h4 class="g-dia">${diaCorto(dia)}</h4><ul class="g-lista">${lista.map(g=>{const c=CATS[g.cat]||CATS.otros,v=aRef(g.monto,g.mon,ref,cb);return `<li><button type="button" data-ed="${esc(g.id)}"><span class="g-emo" aria-hidden="true">${c[0]}</span><span class="g-que"><b>${esc(g.desc||c[1])}</b><small>Pagó <b>${esc(g.pago)}</b> · ${quienes(g.div)}${g.cargo!==g.pago?' · anotó '+esc(g.cargo):''}${cola[g.id]?' · ⏳ sin subir':''}</small></span><span class="g-cuanto"><b>${plata(g.monto,g.mon)}</b>${g.mon!==ref&&v!==null?`<small>≈ ${plata(v,ref)}</small>`:''}</span></button></li>`}).join('')}</ul>`).join('')}
+  const totDia=l=>l.reduce((s,g)=>{const v=aRef(g.monto,g.mon,ref,cb);return v===null?s:s+Math.round(v*k.u)},0);
+  h+=dias.map(([dia,lista])=>`<h4 class="g-dia"><span>${diaCorto(dia)}</span><span class="g-diatot">${enRef(totDia(lista))}</span></h4><ul class="g-lista">${lista.map(g=>{const c=CATS[g.cat]||CATS.otros,v=aRef(g.monto,g.mon,ref,cb);return `<li><button type="button" data-ed="${esc(g.id)}"><span class="g-emo" aria-hidden="true">${c[0]}</span><span class="g-que"><b>${esc(g.desc||c[1])}</b><small>Pagó <b>${esc(g.pago)}</b> · ${quienes(g.div)}${g.cargo!==g.pago?' · anotó '+esc(g.cargo):''}${cola[g.id]?' · ⏳ sin subir':''}</small></span><span class="g-cuanto"><b>${plata(g.monto,g.mon)}</b>${g.mon!==ref&&v!==null?`<small>≈ ${plata(v,ref)}</small>`:''}</span></button></li>`}).join('')}</ul>`).join('')}
  h+=`</section>`;
  // Totales
  if(gs.length){
@@ -2214,7 +2224,8 @@ ${gs.length?`<div class="g-resumen">
 const dlg=document.createElement('dialog');dlg.className='g-dlg';document.body.appendChild(dlg);
 let f=null; // el gasto que se está editando
 function abrir(g){
- f=g?JSON.parse(JSON.stringify(g)):{id:nuevoId(),fecha:hoy(),desc:'',cat:'',monto:0,mon:ultMon,pago:yo,div:Object.fromEntries(PERS.map(n=>[n,1])),cargo:yo,borrado:0,nuevo:1};
+ const divDef=(Array.isArray(ultDiv)&&ultDiv.filter(n=>PERS.includes(n)).length?ultDiv.filter(n=>PERS.includes(n)):PAGAN);
+ f=g?JSON.parse(JSON.stringify(g)):{id:nuevoId(),fecha:hoy(),desc:'',cat:CATS[ultCat]?ultCat:'',monto:0,mon:ultMon,pago:yo,div:Object.fromEntries(divDef.map(n=>[n,1])),cargo:yo,borrado:0,nuevo:1};
  f.distintas=new Set(Object.values(f.div)).size>1;
  dlg.innerHTML=`<form method="dialog" novalidate>
  <div class="g-dcab"><h3 tabindex="-1" autofocus>${f.nuevo?'Nuevo gasto':'Editar gasto'}</h3><button type="button" class="g-x" data-acc="cerrar" aria-label="Cerrar">✕</button></div>
@@ -2240,13 +2251,14 @@ function abrir(g){
 }
 function pintarEntre(){
  const c=dlg.querySelector('.g-entre'),total=numero(dlg.querySelector('#g-monto').value);
- let h=`<div class="g-chips g-pers" role="group" aria-label="Entre quiénes">${PERS.map(n=>`<button type="button" data-div="${n}" aria-pressed="${n in f.div}">${n in f.div?'✓ ':''}${n}</button>`).join('')}</div>
+ let h=`<div class="g-chips g-pers" role="group" aria-label="Entre quiénes">${PERS.map(n=>`<button type="button" data-div="${n}" aria-pressed="${n in f.div}">${n in f.div?'✓ ':''}${nom(n)}</button>`).join('')}</div>
+ <p class="muted g-chico g-nota">${APOYO} no paga: su parte la cubren los ${PAGAN.length}.</p>
  <label class="g-check"><input type="checkbox" id="g-dist" ${f.distintas?'checked':''}> Partes distintas (cada uno un monto)</label>`;
  if(f.distintas){
   const ns=PERS.filter(n=>n in f.div);
-  h+=`<div class="g-partes">${ns.map(n=>`<label><span>${n}</span><input inputmode="decimal" data-parte="${n}" value="${f.div[n]?esc(String(f.div[n]).replace('.',',')):''}" placeholder="0"></label>`).join('')}
+  h+=`<div class="g-partes">${ns.map(n=>`<label><span>${nom(n)}</span><input inputmode="decimal" data-parte="${n}" value="${f.div[n]?esc(String(f.div[n]).replace('.',',')):''}" placeholder="0"></label>`).join('')}
   <p class="g-falta"></p></div>`;
- }else if(total>0&&Object.keys(f.div).length)h+=`<p class="muted g-chico">${plata(total/Object.keys(f.div).length,f.mon)} cada uno</p>`;
+ }else if(total>0&&Object.keys(f.div).length&&!(APOYO in f.div))h+=`<p class="muted g-chico">${plata(total/Object.keys(f.div).length,f.mon)} cada uno</p>`;
  c.innerHTML=h;falta();
 }
 function falta(){ // cuánto falta repartir con "partes distintas"
@@ -2299,6 +2311,7 @@ dlg.addEventListener('submit',e=>{
  const err=validarForm();dlg.querySelector('.g-error').textContent=err;if(err)return;
  if(!f.cat)f.cat='otros';
  ultMon=f.mon;pone('mon',ultMon);
+ if(f.nuevo){ultCat=f.cat;pone('cat',ultCat);ultDiv=PERS.filter(n=>n in f.div);pone('div',ultDiv)} // la próxima vez: monto + Guardar
  const g={id:f.id,fecha:f.fecha,desc:f.desc,cat:f.cat,monto:Math.round(f.monto*100)/100,mon:f.mon,pago:f.pago,div:{},cargo:f.nuevo?yo:f.cargo,borrado:0};
  PERS.forEach(n=>{if(n in f.div)g.div[n]=f.distintas?Math.round(f.div[n]*100)/100:1});
  dlg.close();guardarGasto(g);
@@ -2336,12 +2349,12 @@ dlgC.addEventListener('submit',e=>{e.preventDefault();
 /* ===== WhatsApp y CSV ===== */
 function textoWA(){
  const cb=cambio(),gs=activos(),k=cuentas(gs,ref,cb),pagos=liquidar(k.saldo);
- let t=`🏍️ *Austral 2026 · Gastos del grupo*\n💰 Total: *${enRef(k.total)}* en ${gs.length===1?'1 gasto':gs.length+' gastos'}\n`;
+ let t=`🏍️ *Austral 2026 · Gastos del grupo*\n💰 Total: *${enRef(k.total)}* en ${gs.length===1?'1 gasto':gs.length+' gastos'} (${enRef(Math.round(k.total/PAGAN.length))} c/u entre ${PAGAN.length})\n`;
  {const np=Object.keys(cola).length;if(np)t+=`⏳ Ojo: ${np===1?'1 gasto todavía no se subió':np+' gastos todavía no se subieron'} (falta señal)\n`;}
  if(cb.ars>0)t+=`💱 Cambio: US$ 1 = ${plata(cb.ars,'ARS')} = ${plata(cb.clp,'CLP')}\n`;
  if(k.faltan)t+=`⚠️ ${k.faltan===1?'1 gasto sin pasar':k.faltan+' gastos sin pasar'} (falta el tipo de cambio)\n`;
  t+=`\n*¿Quién le paga a quién?*\n`+(pagos.length?pagos.map(p=>`💸 ${p.de} → ${p.a}: *${enRef(p.monto)}*`).join('\n'):'🎉 Estamos todos a mano')+`\n\n*Saldos*\n`;
- t+=PERS.map(n=>{const s=k.saldo[n]||0;return `${s>0?'🟢':s<0?'🔴':'⚪'} ${n}: ${s?(s>0?'+':'')+enRef(s):'al día'} (pagó ${enRef(k.pago[n]||0)})`}).join('\n');
+ t+=PERS.map(n=>{const s=k.saldo[n]||0;if(n===APOYO&&!k.pago[n])return `⚪ ${nom(n)}: no paga`;return `${s>0?'🟢':s<0?'🔴':'⚪'} ${nom(n)}: ${s?(s>0?'+':'')+enRef(s):'al día'} (pagó ${enRef(k.pago[n]||0)})`}).join('\n');
  return t+`\n\nDetalle en la guía, pestaña Gastos.`;
 }
 function csv(){
@@ -2358,7 +2371,7 @@ panel.addEventListener('click',e=>{
  if(b.dataset.ref){ref=b.dataset.ref;pone('ref',ref);pintar();return}
  if(b.dataset.ed){const g=todos().find(x=>x.id===b.dataset.ed);if(g)abrir(g);return}
  const a=b.dataset.acc;
- if(a==='quien'){yo=null;pone('yo',null);pintar()}
+ if(a==='quien'){if(!confirm(`Ahora sos ${yo} en este teléfono.\n¿Cambiar quién sos?`))return;yo=null;pone('yo',null);pintar()}
  if(a==='nuevo')abrir(null);
  if(a==='cambio')abrirCambio();
  if(a==='wa')window.open('https://wa.me/?text='+encodeURIComponent(textoWA()),'_blank','noopener');
