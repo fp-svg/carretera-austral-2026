@@ -861,10 +861,10 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
 </style>
 <style id="pestanas-clima">.pestanas{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.pestanas button{min-height:44px;padding:4px 0;font-size:14px;letter-spacing:-.01em}@media (min-width:600px){.pestanas{grid-template-columns:repeat(6,1fr)}}</style>
 <style id="gastos-css">
-/* Siete pestañas: 4 arriba y 3 abajo en el teléfono (como la guía de la familia); una fila en pantalla grande */
+/* Ocho pestañas: 4 arriba y 4 abajo en el teléfono (como la guía de la familia); una fila en pantalla grande */
 /* Igual que la guía de la familia: la luna/sol queda arriba a la derecha, al lado de la primera fila; la segunda fila llena el ancho */
-@media (max-width:599px){nav .wrap{position:relative}#tema{position:absolute;right:18px;top:0}.pestanas{display:flex;flex-wrap:wrap;gap:4px}.pestanas button{flex:0 0 calc((100% - 60px)/4);min-width:0;min-height:44px;padding:4px 0;font-size:14.5px;letter-spacing:-.01em}.pestanas button:nth-child(n+5){flex-basis:calc((100% - 8px)/3)}}
-@media (min-width:600px){.pestanas{grid-template-columns:repeat(7,1fr)}.pestanas button{font-size:15px}}
+@media (max-width:599px){nav .wrap{position:relative}#tema{position:absolute;right:18px;top:0}.pestanas{display:flex;flex-wrap:wrap;gap:4px}.pestanas button{flex:0 0 calc((100% - 60px)/4);min-width:0;min-height:44px;padding:4px 0;font-size:14.5px;letter-spacing:-.01em}.pestanas button:nth-child(n+5){flex-basis:calc((100% - 12px)/4)}}
+@media (min-width:600px){.pestanas{grid-template-columns:repeat(8,1fr)}.pestanas button{font-size:15px}}
 
 /* Gastos */
 #gastos,.g-dlg{--favor:#1d6b38;--contra:#b42318;--favor-bg:#e5f3e9;--contra-bg:#fdeceb;--favor-borde:#9fcfae;--contra-borde:#f1aaa3}
@@ -982,6 +982,30 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
 .g-diatot{font-variant-numeric:tabular-nums;letter-spacing:0;text-transform:none;color:var(--muted)}
 .g-saldos .g-apoyo>span{font-family:system-ui,-apple-system,sans-serif;font-size:15px;color:var(--muted)}
 .g-nota{margin:6px 0 4px}
+
+/* Emergencia (usa también las clases g-* de los gastos) */
+.e-ficha{background:var(--ojo-bg,#fff3df);border-color:var(--ojo-borde,#f0d3a4);color:var(--ojo-tx,#3a2a14)}
+.e-ficha h3{margin:0 0 6px;font-size:18px}.e-ficha p{margin:0;font-size:15.5px;line-height:1.45}
+.e-cab{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.e-cab h3{margin:0;font-size:21px}.e-cab h3 small{font-size:14px;font-weight:600}
+.e-mio{border:1.5px solid var(--accent)}
+.e-con{padding:12px 0 2px;border-top:1px solid var(--line);margin-top:12px;font-size:16.5px}
+.e-cab+.e-con{border-top:0;margin-top:4px}
+.e-num{font-family:var(--display);font-size:22px;font-weight:700;margin:2px 0 8px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.e-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.e-btns .btn{justify-content:center;min-height:52px;font-size:17px}
+.e-wa{background:#25d366;border-color:#25d366;color:#0b2414}
+.e-salud{list-style:none;margin:12px 0 0;padding:10px 0 0;border-top:1px solid var(--line)}
+.e-salud li{padding:4px 0}
+.e-salud span{display:block;font-size:13.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sage)}
+.e-salud b{font-size:17px;overflow-wrap:anywhere}
+.e-nada{margin:8px 0 0}
+.e-cargar{width:100%;justify-content:center;min-height:52px;font-size:17px;margin-top:4px}
+.e-dlg input+input{margin-top:8px}
+.e-dlg textarea{width:100%;min-height:72px;border:1.5px solid var(--borde-btn);border-radius:14px;background:var(--card);color:var(--ink);font:inherit;font-size:18px;padding:10px 14px}
+.e-dlg textarea:focus{outline:3px solid var(--accent);border-color:var(--accent)}
+.e-sangre{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.e-sangre button{min-height:48px;padding:6px 4px;border-radius:14px}
 </style>
 </head>
 <body>
@@ -1009,6 +1033,7 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
  <button role="tab" aria-selected="false" data-tab="lista">Lista</button>
  <button role="tab" aria-selected="false" data-tab="charlar">Charlar</button>
  <button role="tab" aria-selected="false" data-tab="gastos">Gastos</button>
+ <button role="tab" aria-selected="false" data-tab="emergencia">Emergencia</button>
 </div><button id="tema" type="button" aria-label="Modo oscuro" aria-pressed="false" title="Modo oscuro"><svg class="luna" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg><svg class="sol" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button></div></nav>
 
 <main class="wrap">
@@ -1108,6 +1133,8 @@ footer{color:var(--muted);font-size:13.5px;line-height:1.55;padding:20px 0 calc(
 </section>
 
 <section id="gastos" class="panel" aria-label="Gastos del grupo"></section>
+
+<section id="emergencia" class="panel" aria-label="Contactos de emergencia"></section>
 
 <footer>
  Datos sumados el 6 y 7/10/2026 de Gendarmería (pasos), Vialidad de Santa Cruz (parte del 6/10), Naviera Somarco y Transportes del Estuario (balsas), MOP Aysén (obras), CONAF, registro de combustibles de Chile y Secretaría de Energía. Mapa: OpenStreetMap y Esri; km calculados con OSRM y ripio marcado en forma aproximada. Los horarios y el estado de las rutas cambian: revisarlos la semana antes de salir.
@@ -2391,11 +2418,179 @@ panel.addEventListener('click',e=>{
  if(a==='wa')window.open('https://wa.me/?text='+encodeURIComponent(textoWA()),'_blank','noopener');
  if(a==='csv')csv();
 });
-document.querySelectorAll('nav [role=tab]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.tab==='gastos'){pintar();sincronizar()}}));
+document.querySelectorAll('nav [role=tab]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.tab==='gastos'){yo=lee('yo',null);pintar();sincronizar()}}));
 window.addEventListener('online',sincronizar);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sincronizar()});
 setInterval(()=>{if(document.visibilityState==='visible'&&(Object.keys(cola).length||cambioPend||panel.classList.contains('active')))sincronizar()},45000);
 pintar();sincronizar();
+})();
+
+/* ---------- Emergencia: los contactos de cada uno (misma planilla que los gastos; ver gastos/Code.gs) ---------- */
+(function(){
+const E_URL='https://script.google.com/macros/s/AKfycbwdQcg_2w4yfz8oOasevCjKIe7NTuxGs9A7kK8vdZhPbYhu44uKhNNkD27zoagDcV2vig/exec';
+const PERS=['Walter','Gustavo','Pablo','Fernando','Juan'];
+const SANGRE=['0+','0-','A+','A-','B+','B-','AB+','AB-'];
+const CAMPOS=['c1n','c1r','c1t','c2n','c2r','c2t','sangre','salud','os','ost'],TELS=['c1t','c2t','ost'];
+const LARGO={c1n:60,c1r:40,c1t:30,c2n:60,c2r:40,c2t:30,sangre:3,salud:200,os:80,ost:30};
+const lee=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},
+ pone=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let datos=lee('austral-emerg-datos',{per:{},ts:0}); // lo último leído de la planilla: se ve aunque no haya señal
+let pend=lee('austral-emerg-pend',null);            // {persona,datos}: lo que cargó uno y todavía no se subió
+let estado='',viejo=false,ocupado=false,otraVez=false;
+const yo=()=>{const y=lee('austral-gastos-yo',null);return PERS.includes(y)?y:null}; // el mismo "¿Quién sos?" de los gastos
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+// Igual que el servidor: textos recortados, teléfonos sólo con dígitos, +, espacios y guiones. null si algo no cierra.
+function limpiar(d){
+ const x={};
+ for(const k of CAMPOS){
+  const v=String(d&&d[k]!=null?d[k]:'').replace(/\s+/g,' ').trim().slice(0,LARGO[k]);
+  if(TELS.includes(k)&&!/^[0-9+ -]*$/.test(v))return null;
+  if(k==='sangre'&&v&&!SANGRE.includes(v))return null;
+  x[k]=v;
+ }
+ return x;
+}
+const vacio=d=>!d||CAMPOS.every(k=>!d[k]);
+const telHref=t=>'tel:'+String(t).replace(/[^\d+]/g,'');
+// wa.me pide el número con código de país, sin + ni 0 ni 15. Sin código, se asume Argentina (+54 9).
+function waNum(t){
+ t=String(t).trim();let d=t.replace(/\D/g,'');
+ if(t.startsWith('+'))return d;
+ if(d.startsWith('00'))return d.slice(2);
+ if(d.length===11&&d[0]==='0')d=d.slice(1);
+ return d.length===10?'549'+d:d;
+}
+
+/* ===== Planilla ===== */
+async function pedir(cuerpo){
+ const ac=new AbortController(),t=setTimeout(()=>ac.abort(),25000);
+ try{
+  const r=await fetch(E_URL,cuerpo?{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(cuerpo),redirect:'follow',signal:ac.signal}:{redirect:'follow',signal:ac.signal,cache:'no-store'});
+  const j=await r.json();if(!j.ok)throw new Error(j.error||'error');return j;
+ }finally{clearTimeout(t)}
+}
+function recibir(j){
+ if(!j.emergencia||typeof j.emergencia!=='object'){viejo=true;return} // la planilla todavía tiene el programa viejo
+ viejo=false;const per={};
+ PERS.forEach(n=>{const x=limpiar(j.emergencia[n]);if(x&&!vacio(x))per[n]=Object.assign(x,{mod:+j.emergencia[n].mod||0})});
+ datos={per,ts:Date.now()};pone('austral-emerg-datos',datos);
+}
+async function sincronizar(){
+ if(ocupado){otraVez=true;return}
+ ocupado=true;estado='subiendo';pintarEstado();
+ try{
+  let j=null;
+  if(pend){const p=pend;
+   try{j=await pedir({accion:'emergencia',persona:p.persona,datos:p.datos})}
+   catch(e){if(/^Emergencia/.test(e.message)){pend=null;pone('austral-emerg-pend',null);estado='mal'}throw e}
+   if(j.emergencia&&pend===p){pend=null;pone('austral-emerg-pend',null)}}
+  if(!j)j=await pedir(null);
+  recibir(j);estado='ok';
+ }catch(e){if(estado!=='mal')estado='sinred'}
+ ocupado=false;pintar();
+ if(otraVez){otraVez=false;setTimeout(sincronizar,300)}
+}
+const de=n=>pend&&pend.persona===n?pend.datos:datos.per[n];
+
+/* ===== Pantalla ===== */
+const panel=document.getElementById('emergencia');
+function pintarEstado(){
+ const e=panel.querySelector('.g-estado');if(!e)return;
+ let t,c='';
+ if(estado==='subiendo')t='↻ Actualizando…';
+ else if(estado==='mal')t='No se pudo guardar: revisá los teléfonos.',c='pend';
+ else if(pend)t='⏳ Tus datos todavía no se subieron'+(viejo?' · se suben cuando se actualice la planilla':estado==='sinred'?' · se suben solos al volver la señal':''),c='pend';
+ else if(estado==='sinred')t='Sin señal · mostrando lo guardado'+(datos.ts?' el '+new Date(datos.ts).toLocaleString('es-AR',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}):''),c='pend';
+ else if(datos.ts&&!viejo)t='✓ Al día',c='ok';
+ else if(!viejo)t='Conectando con la planilla…';
+ else t='';
+ e.textContent=t;e.className='g-estado '+c;
+}
+const botones=(t,nombre)=>`<div class="e-num">${esc(t)}</div><div class="e-btns"><a class="btn prim" href="${telHref(t)}" aria-label="Llamar a ${esc(nombre)}">📞 Llamar</a><a class="btn e-wa" href="https://wa.me/${waNum(t)}" target="_blank" rel="noopener" aria-label="WhatsApp a ${esc(nombre)}">💬 WhatsApp</a></div>`;
+function tarjeta(n,y){
+ const d=de(n),mio=n===y;
+ let h=`<section class="tarjeta e-per${mio?' e-mio':''}"><div class="e-cab"><h3>${esc(n)}${n==='Juan'?' <small class="muted">(camioneta)</small>':''}</h3>${mio&&!vacio(d)?'<button type="button" class="btn" data-acc="editar">✏️ Editar</button>':''}</div>`;
+ if(vacio(d)){
+  h+=mio?`<p class="muted">Todavía no cargaste tus contactos.</p><button type="button" class="btn prim e-cargar" data-acc="editar">+ Cargar mis contactos</button>`:`<p class="muted e-nada">Todavía no cargó sus contactos.</p>`;
+  return h+'</section>';
+ }
+ [1,2].forEach(i=>{const nm=d['c'+i+'n'],r=d['c'+i+'r'],t=d['c'+i+'t'];if(!nm&&!t)return;
+  h+=`<div class="e-con"><div><b>${esc(nm||'Contacto '+i)}</b>${r?` <span class="muted">· ${esc(r)}</span>`:''}</div>${t?botones(t,nm||'contacto '+i):'<p class="muted g-chico">Sin teléfono</p>'}</div>`});
+ const s=[];
+ if(d.sangre)s.push(`<li><span>Grupo sanguíneo</span><b>${esc(d.sangre)}</b></li>`);
+ if(d.salud)s.push(`<li><span>Alergias o medicación</span><b>${esc(d.salud)}</b></li>`);
+ if(d.os)s.push(`<li><span>Obra social o seguro</span><b>${esc(d.os)}</b></li>`);
+ if(s.length)h+=`<ul class="e-salud">${s.join('')}</ul>`;
+ if(d.ost)h+=`<div class="e-con e-asist"><div><b>Asistencia${d.os?' · '+esc(d.os):''}</b></div>${botones(d.ost,'la asistencia')}</div>`;
+ if(pend&&pend.persona===n)h+=`<p class="muted g-chico">⏳ sin subir</p>`;
+ return h+'</section>';
+}
+function pintar(){
+ const y=yo();
+ if(!y){
+  panel.innerHTML=`<h2>Emergencia</h2><p class="intro">Los contactos de emergencia de cada uno, para llamar o mandar un WhatsApp rápido. Cada uno carga los suyos y los ven todos.</p>
+  <div class="tarjeta g-quien"><h3>¿Quién sos?</h3><p class="muted">Queda guardado en este teléfono (es el mismo de Gastos). Se puede cambiar.</p><div class="g-chips g-grande">${PERS.map(n=>`<button type="button" data-yo="${n}">${n}</button>`).join('')}</div></div>`;
+  return;
+ }
+ let h=`<div class="g-cab"><h2>Emergencia</h2><button type="button" class="g-link" data-acc="quien">Sos <b>${esc(y)}</b> · cambiar</button></div>
+ <p class="g-estado" aria-live="polite"></p>`;
+ if(viejo)h+=`<div class="ojo"><b>Falta actualizar la planilla.</b> Lo que cargues queda guardado en este teléfono y se sube solo cuando esté actualizada.</div>`;
+ h+=`<div class="tarjeta e-ficha"><h3>📱 Ficha médica del iPhone</h3><p>Completala antes de salir: app <b>Salud</b> → tu foto (arriba a la derecha) → <b>Ficha médica</b> → Editar. Cargá tu contacto de emergencia y activá <b>Mostrar si está bloqueado</b>. Los rescatistas la ven desde la pantalla bloqueada, sin tu código.</p></div>`;
+ h+=[y].concat(PERS.filter(n=>n!==y)).map(n=>tarjeta(n,y)).join('');
+ h+=`<p class="muted g-chico">Se guarda una copia en el teléfono: los teléfonos se ven aunque no haya señal.</p>`;
+ panel.innerHTML=h;pintarEstado();
+}
+
+/* ===== Formulario ===== */
+const dlg=document.createElement('dialog');dlg.className='g-dlg e-dlg';document.body.appendChild(dlg);
+let sangre='';
+function abrir(){
+ const d=de(yo())||{},v=k=>esc(d[k]||'');sangre=d.sangre||'';
+ const con=i=>`<p class="g-lab">Contacto ${i}${i===2?' (opcional)':''}</p>
+ <input id="e-c${i}n" maxlength="60" autocomplete="off" placeholder="Nombre" value="${v('c'+i+'n')}">
+ <input id="e-c${i}r" maxlength="40" autocomplete="off" placeholder="Parentesco o relación (ej.: esposa)" value="${v('c'+i+'r')}">
+ <input id="e-c${i}t" type="tel" inputmode="tel" maxlength="30" autocomplete="off" placeholder="Teléfono: +54 9 2983 123456" value="${v('c'+i+'t')}">`;
+ dlg.innerHTML=`<form method="dialog" novalidate>
+ <div class="g-dcab"><h3 tabindex="-1" autofocus>Mis datos de emergencia</h3><button type="button" class="g-x" data-acc="cerrar" aria-label="Cerrar">✕</button></div>
+ <p class="muted g-chico">Teléfonos con código de país (+54 9 y el número, sin 0 ni 15; Chile +56 9) así anda WhatsApp.</p>
+ ${con(1)}${con(2)}
+ <p class="g-lab">Grupo sanguíneo (opcional)</p>
+ <div class="g-chips e-sangre" role="group" aria-label="Grupo sanguíneo">${SANGRE.map(s=>`<button type="button" data-sangre="${s}" aria-pressed="${sangre===s}">${s}</button>`).join('')}</div>
+ <label class="g-lab" for="e-salud">Alergias o medicación (opcional)</label>
+ <textarea id="e-salud" maxlength="200" rows="2" placeholder="Ej.: alérgico a la penicilina">${v('salud')}</textarea>
+ <label class="g-lab" for="e-os">Obra social o seguro (opcional)</label>
+ <input id="e-os" maxlength="80" autocomplete="off" placeholder="Ej.: OSDE 310 / seguro de viaje" value="${v('os')}">
+ <input id="e-ost" type="tel" inputmode="tel" maxlength="30" autocomplete="off" placeholder="Teléfono de asistencia" value="${v('ost')}">
+ <p class="g-error" role="alert"></p>
+ <div class="g-dpie"><button type="submit" class="btn prim g-ok">Guardar</button></div>
+ </form>`;
+ dlg.showModal();
+}
+dlg.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.acc==='cerrar')dlg.close();
+ if(b.dataset.sangre!=null){sangre=sangre===b.dataset.sangre?'':b.dataset.sangre;dlg.querySelectorAll('[data-sangre]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.sangre===sangre))}
+});
+dlg.addEventListener('submit',e=>{
+ e.preventDefault();
+ const bruto={sangre};CAMPOS.filter(k=>k!=='sangre').forEach(k=>bruto[k]=dlg.querySelector('#e-'+k).value);
+ const x=limpiar(bruto),err=dlg.querySelector('.g-error');
+ if(!x){err.textContent='Los teléfonos sólo pueden tener números, +, espacios y guiones.';return}
+ if(!x.c1t&&!x.c2t){err.textContent='Falta al menos un teléfono de contacto.';return}
+ pend={persona:yo(),datos:x};pone('austral-emerg-pend',pend);estado='';dlg.close();pintar();sincronizar();
+});
+
+panel.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.yo){pone('austral-gastos-yo',b.dataset.yo);pintar();return}
+ const a=b.dataset.acc;
+ if(a==='quien'){if(!confirm(`Ahora sos ${yo()} en este teléfono.\n¿Cambiar quién sos?`))return;pone('austral-gastos-yo',null);pintar()}
+ if(a==='editar')abrir();
+});
+document.querySelectorAll('nav [role=tab]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.tab==='emergencia'){pintar();sincronizar()}}));
+window.addEventListener('online',sincronizar);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sincronizar()});
+pintar();sincronizar(); // al abrir la guía, aunque no se mire la pestaña: así queda la copia para cuando no haya señal
 })();
 </script>
 </body>
